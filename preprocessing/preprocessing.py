@@ -19,8 +19,6 @@ def img_extract_model():
     return image_features_extract_model
 
 def store_img_extracted_features(encode_train):
-
-
     image_dataset = tf.data.Dataset.from_tensor_slices(encode_train)
     image_features_extract_model = img_extract_model()
     image_dataset = image_dataset.map(
@@ -43,4 +41,4 @@ def tokenize_words(max_words,captions):
     tokenizer.index_word[0] = '<pad>'
     train_seqs = tokenizer.texts_to_sequences(captions)
     cap_vector = tf.keras.preprocessing.sequence.pad_sequences(train_seqs, padding='post')
-    return cap_vector
+    return cap_vector, tokenizer, train_seqs

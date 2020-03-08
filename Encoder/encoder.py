@@ -7,15 +7,15 @@ import tensorflow as tf
 
 
 class InceptionEncoder(tf.keras.Model):
-    def __init__(self, units):
-        """
-            units:      number of internal units per layer
-        """
+    def __init__(self, embedding_dim):
         super(InceptionEncoder, self).__init__()
-        
-        # TODO
-        
-        pass
+        # shape after fc == (batch_size, 64, embedding_dim)
+        self.fc = tf.keras.layers.Dense(embedding_dim)
+
+    def call(self, x):
+        x = self.fc(x)
+        x = tf.nn.relu(x)
+        return x
     
     
 

@@ -12,22 +12,27 @@ class SoftAttention(tf.keras.Model):
             units:      number of internal units per layer
         """
         super(SoftAttention, self).__init__()
-        
-        # TODO
-        
-        pass
+        self.W1 = tf.keras.layers.Dense(units)
+        self.W2 = tf.keras.layers.Dense(units)
+        self.V = tf.keras.layers.Dense(1)
+
 
     def call(self, features, hidden):
         """
             features:   features observed from image
             hidden:     hidden state of the decoder network (RNN) from previous iteration
         """
-        
-        # TODO
-        
-        return None
-    
-    
+        hidden_with_time_axis = tf.expand_dims(hidden, 1)
+        # score shape == (batch_size, 64, hidden_size)
+        score = tf.nn.tanh(self.W1(features) + self.W2(hidden_with_time_axis))
+        # attention_weights shape == (batch_size, 64, 1)
+        # you get 1 at the last axis because you are applying score to self.V
+        attention_weights = tf.nn.softmax(self.V(score), axis=1)
+        # context_vector shape after sum == (batch_size, hidden_size)
+        context_vector = attention_weights * features
+        context_vector = tf.reduce_sum(context_vector, axis=1)
+        return context_vector, attention_weights
+
 class HardAttention(tf.keras.Model):
     
     # TODO 1: Define custom loss function?

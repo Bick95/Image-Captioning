@@ -2,6 +2,8 @@ import csv
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
+import numpy as np
+
 '''
 Functions stores the location of the image and the corresponding caption.
 Location and the captions are returned as independent list
@@ -37,3 +39,10 @@ def split(img_name_vector, cap_vector):
                                                                         test_size=0.2,
                                                                         random_state=0)
     return img_name_train, img_name_val, cap_train, cap_val
+
+def map_func(img_name, cap):
+  img_tensor = np.load(img_name.decode('utf-8')+'.npy')
+  return img_tensor, cap
+
+
+

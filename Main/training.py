@@ -3,9 +3,9 @@ import os, sys
 sys.path.append(os.path.dirname(os.getcwd()))
 import tensorflow as tf
 # Import own modules
-from attention.modules import SoftAttention, HardAttention
-from Decoder.rnn_decoder import *
-from Encoder.encoder import *
+#from attention.modules import SoftAttention, HardAttention
+#from Decoder.decoder import *
+#from Encoder.encoder import *
 from utils.utils import *
 from variables import *
 import time
@@ -33,17 +33,19 @@ def loss_function(real, pred):
     return tf.reduce_mean(loss_)
 
 @tf.function
-def train_step(img_tensor, target, decoder, encoder, tokenizer, optimizer):
+def train_step(img_tensor, target, decoder, attention, encoder, tokenizer, optimizer):
   loss = 0
   # initializing the hidden state for each batch
-  # because the captions are not related from image to image
+  # because the captions are not related between images
   hidden = decoder.reset_state(batch_size=target.shape[0])
   dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * target.shape[0], 1)
   with tf.GradientTape() as tape:
       features = encoder(img_tensor)
       for i in range(1, target.shape[1]):
-          # passing the features through the decoder
-          predictions, hidden, _ = decoder(dec_input, features, hidden)
+          # defining attention as a separate model
+          context_vector, attention_weights = attention(features, hidden)
+          # passing the context vector through the decoder
+          predictions, hidden = decoder(dec_input, context_vector)
           loss += loss_function(target[:, i], predictions)
           # using teacher forcing
           dec_input = tf.expand_dims(target[:, i], 1)
@@ -53,11 +55,8 @@ def train_step(img_tensor, target, decoder, encoder, tokenizer, optimizer):
   optimizer.apply_gradients(zip(gradients, trainable_variables))
   return loss, total_loss
 
-def training(img_name_train, img_name_val, cap_train, cap_val,tokenizer):
+def training(img_name_train, img_name_val, cap_train, cap_val,tokenizer, encoder, attention, decoder):
     num_steps = len(img_name_train + img_name_val) // BATCH_SIZE
-    #Encoding Decoding Architecture
-    encoder = InceptionEncoder(embedding_dim)
-    decoder = RNNDecoder(embedding_dim, units, vocab_size)
     dataset = tf.data.Dataset.from_tensor_slices((img_name_train, cap_train))
     #Get the data ready for training
     # Use map to load the numpy files in parallel
@@ -71,6 +70,7 @@ def training(img_name_train, img_name_val, cap_train, cap_val,tokenizer):
     optimizer = get_optimizer()
     checkpoint_path = "./checkpoints/train"
     ckpt = tf.train.Checkpoint(encoder=encoder,
+                               attention=attention,
                                decoder=decoder,
                                optimizer=optimizer)
     ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
@@ -85,7 +85,7 @@ def training(img_name_train, img_name_val, cap_train, cap_val,tokenizer):
         start = time.time()
         total_loss = 0
         for (batch, (img_tensor, target)) in enumerate(dataset):
-            batch_loss, t_loss = train_step(img_tensor, target, decoder, encoder, tokenizer, optimizer)
+            batch_loss, t_loss = train_step(img_tensor, target, decoder, attention, encoder, tokenizer, optimizer)
             total_loss += t_loss
             # if batch % 100 == 0:
             #     print ('Epoch {} Batch {} Loss {:.4f}'.format(
@@ -98,7 +98,7 @@ def training(img_name_train, img_name_val, cap_train, cap_val,tokenizer):
                                              total_loss / num_steps))
         print ('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
 
-    return decoder, encoder
+    #return decoder, encoder
 
 
 

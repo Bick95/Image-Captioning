@@ -1,7 +1,7 @@
 # Get access to parent directory
 import os, sys
 sys.path.append(os.path.dirname(os.getcwd()))
-from Decoder.rnn_decoder import *
+from Decoder.decoder import *
 from Encoder.encoder import *
 from preprocessing.preprocessing import *
 from variables import *

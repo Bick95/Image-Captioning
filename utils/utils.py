@@ -10,7 +10,7 @@ def _load_image(image_path):
 def load_image_batch(image_paths):
     batch = tf.zeros([BATCH_SIZE, 299, 299, 3], tf.float32)
     for idx, path in enumerate(image_paths):
-        batch[idx, :, :, :] = _load_image(path)
+        batch[idx] = _load_image(path)
     return batch
 
 

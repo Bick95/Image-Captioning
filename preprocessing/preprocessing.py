@@ -60,6 +60,7 @@ def get_image_caption_list(captions_file_path, images_path, debug):
     with open(captions_file_path, 'r') as csvfile:
         data = csv.reader(csvfile, delimiter='|')
         for row in data:
+            #print(row)
             img_name = images_path + row[0]
             caption = '<start> ' + row[2] + ' <end>'
             img_name_list.append(img_name)
@@ -88,8 +89,8 @@ def get_meta_datasets(captions_file_path, images_path, tokenizer, max_words, dat
     test_percentage = (1.-(data_split['test']/test_val_percentage))
 
     print('Percentage training data:', data_split['train'])
-    print('Percentage validat. data:', (test_val_percentage-test_percentage))
-    print('Percentage testing data: ', test_percentage)
+    print('Percentage validat. data:', (test_val_percentage-data_split['test']))
+    print('Percentage testing data: ', data_split['test'])
 
     # 1. Create training and test+validation sets using an 70-30 split
     img_names_train, img_names_val_test, caps_train, caps_val_test = train_test_split(img_name_list,

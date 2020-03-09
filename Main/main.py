@@ -5,8 +5,8 @@ import csv
 from utils.utils import *
 from preprocessing.preprocessing import get_meta_datasets
 import tensorflow as tf
-from variables import embedding_dim, units, vocab_size, dataset_path, debug, \
-                      max_length, max_words, captions_file_path, images_path
+from variables import embedding_dim, units, vocab_size, debug, \
+                      max_words, captions_file_path, images_path
 from training import training
 from evaluation import evaluate
 from Attention.modules import *

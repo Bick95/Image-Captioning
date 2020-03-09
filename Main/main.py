@@ -19,7 +19,7 @@ def main():
 
    # Encoding-Attention-Decoding Architecture
    encoder = InceptionEncoder(embedding_dim)
-   attention = SoftAttention(self.units)
+   attention = SoftAttention(units)
    decoder = RNNDecoder(embedding_dim, units, vocab_size)
 
    training(img_name_train, img_name_val, cap_train, cap_val, tokenizer, encoder, attention, decoder)

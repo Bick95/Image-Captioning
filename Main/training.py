@@ -6,7 +6,7 @@ import tensorflow as tf
 #from attention.modules import SoftAttention, HardAttention
 #from Decoder.decoder import *
 #from Encoder.encoder import *
-from utils.utils import *
+from utils.utils import load_image_batch
 from variables import *
 import time
 
@@ -45,7 +45,7 @@ def train_step(img_tensor, target, decoder, attention, encoder, tokenizer, optim
           # defining attention as a separate model
           context_vector, attention_weights = attention(features, hidden)
           # passing the context vector through the decoder
-          predictions, hidden = decoder(dec_input, context_vector)
+          predictions, hidden = decoder(dec_input, context_vector)  # TODO: Double-check working of decoder. Doing the right thing in terms of predictions???
           loss += loss_function(target[:, i], predictions)
           # using teacher forcing
           dec_input = tf.expand_dims(target[:, i], 1)
@@ -55,17 +55,11 @@ def train_step(img_tensor, target, decoder, attention, encoder, tokenizer, optim
   optimizer.apply_gradients(zip(gradients, trainable_variables))
   return loss, total_loss
 
-def training(img_name_train, img_name_val, cap_train, cap_val,tokenizer, encoder, attention, decoder):
-    num_steps = len(img_name_train + img_name_val) // BATCH_SIZE
-    dataset = tf.data.Dataset.from_tensor_slices((img_name_train, cap_train))
-    #Get the data ready for training
-    # Use map to load the numpy files in parallel
-    dataset = dataset.map(lambda item1, item2: tf.numpy_function(
-        map_func, [item1, item2], [tf.float32, tf.int32]),
-                          num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    # Shuffle and batch
-    dataset = dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-    dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention, decoder):
+
+    num_train_examples = len(list(train_ds_meta))
+    num_steps = num_train_examples // BATCH_SIZE
+
     #Get Optimizer and loss Object
     optimizer = get_optimizer()
     checkpoint_path = "./checkpoints/train"
@@ -84,7 +78,11 @@ def training(img_name_train, img_name_val, cap_train, cap_val,tokenizer, encoder
     for epoch in range(start_epoch, EPOCHS):
         start = time.time()
         total_loss = 0
-        for (batch, (img_tensor, target)) in enumerate(dataset):
+        train_ds_meta = train_ds_meta.shuffle(num_train_examples).batch(BATCH_SIZE)
+        for (batch, (img_paths, target)) in enumerate(train_ds_meta):
+            # Read in images from paths
+            img_tensor = load_image_batch(img_paths)
+            # Perform training on one image
             batch_loss, t_loss = train_step(img_tensor, target, decoder, attention, encoder, tokenizer, optimizer)
             total_loss += t_loss
             # if batch % 100 == 0:
@@ -94,6 +92,8 @@ def training(img_name_train, img_name_val, cap_train, cap_val,tokenizer, encoder
         loss_plot.append(total_loss / num_steps)
         if epoch % 5 == 0:
             ckpt_manager.save()
+
+        # TODO: make persistent - save list
         print ('Epoch {} Loss {:.6f}'.format(epoch + 1,
                                              total_loss / num_steps))
         print ('Time taken for 1 epoch {} sec\n'.format(time.time() - start))

@@ -1,48 +1,19 @@
-import csv
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
-import numpy as np
+import tensorflow as tf
+from variables import *
 
-'''
-Functions stores the location of the image and the corresponding caption.
-Location and the captions are returned as independent list
-'''
-def get_image_n_caption(csv_file_path,images_path,debug):
-    caption_list = []
-    img_name_list = []
-    cnt = 0
-    with open(csv_file_path, 'r') as csvfile:
-        data = csv.reader(csvfile, delimiter='|')
-        for row in data:
-            img_name = ""
-            img_name = images_path + row[0]
-            caption  = '<start> ' + row[2] + ' <end>'
-            img_name_list.append(img_name)
-            caption_list.append(caption)
-            if(not debug):
-                continue
-            cnt = cnt + 1
-            if(cnt == 100):
-                break
-    return img_name_list[1:], caption_list[1:]
+def _load_image(image_path):
+    img = tf.io.read_file(image_path)
+    img = tf.image.decode_jpeg(img, channels=3)
+    img = tf.image.resize(img, (299, 299))
+    return img
 
-def max_len_tensor(tensor):
-    return max(len(t) for t in tensor)
+def load_image_batch(image_paths):
+    batch = tf.zeros([BATCH_SIZE, 299, 299, 3], tf.float32)
+    for idx, path in enumerate(image_paths):
+        batch[idx, :, :, :] = _load_image(path)
+    return batch
 
-def split(img_name_vector, cap_vector):
-    img_name_vector, cap_vector = shuffle(img_name_vector,
-                                          cap_vector,
-                                              random_state=1)
-    img_name_train, img_name_val, cap_train, cap_val = train_test_split(img_name_vector,
-                                                                        cap_vector,
-                                                                        test_size=0.2,
-                                                                        random_state=0)
-    return img_name_train, img_name_val, cap_train, cap_val
 
-def map_func(img_name, cap):
-  img_tensor = np.load(img_name.decode('utf-8')+'.npy')
-  return img_tensor, cap
 
 
 

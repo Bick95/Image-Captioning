@@ -7,8 +7,8 @@
 #image_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/flickr30k_images/"
 
 # Daniel Peregrine:
-csv_file_path = "../../flickr30k_images/results.csv"
-image_path = "../../flickr30k_images/flickr30k_images/"
+captions_file_path = "../../flickr30k_images/results.csv"
+images_path = "../../flickr30k_images/flickr30k_images/"
 
 #csv_file_path = "../data/flickr30k_images/results.csv"
 #image_path = "../data/flickr30k_images/flickr30k_images/"

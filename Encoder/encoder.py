@@ -1,6 +1,7 @@
 # Get access to parent directory
 import os, sys
 sys.path.append(os.path.dirname(os.getcwd()))
+from Main.variables import BATCH_SIZE
 
 # Imports
 import tensorflow as tf
@@ -18,5 +19,5 @@ class InceptionEncoder(tf.keras.Model):
     def call(self, x):
         features = self.inception(x)
         # if len(features.shape) == 4:
-        features = tf.reshape(features, (1, features.shape[1] * features.shape[2], features.shape[3]))
+        features = tf.reshape(features, (x.shape[0], features.shape[1] * features.shape[2], features.shape[3]))
         return features

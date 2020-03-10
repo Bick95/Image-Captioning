@@ -33,23 +33,23 @@ def loss_function(real, pred):
     return tf.reduce_mean(loss_)
 
 @tf.function
-def train_step(img_tensor, target, decoder, attention, encoder, tokenizer, optimizer):
+def train_step(img_batch, targets, decoder, attention, encoder, tokenizer, optimizer):
   loss = 0
   # initializing the hidden state for each batch
   # because the captions are not related between images
-  hidden = decoder.reset_state(batch_size=target.shape[0])
-  dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * target.shape[0], 1)
+  hidden = decoder.reset_state(batch_size=targets.shape[0])	# targets.shape[0] = batch_size
+  dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * targets.shape[0], 1)
   with tf.GradientTape() as tape:
-      features = encoder(img_tensor)
-      for i in range(1, target.shape[1]):
+      features = encoder(img_batch)
+      for i in range(1, targets.shape[1]): # targets.shape[1] = max_length_token   # TODO: shall stop once '<end>'-token is sampled or reached, right?
           # defining attention as a separate model
           context_vector, attention_weights = attention(features, hidden)
           # passing the context vector through the decoder
-          predictions, hidden = decoder(dec_input, context_vector)  # TODO: Double-check working of decoder. Doing the right thing in terms of predictions???
-          loss += loss_function(target[:, i], predictions)
+          predictions, hidden = decoder(dec_input, context_vector)  	# TODO: Double-check working of decoder. Doing the right thing in terms of predictions???
+          loss += loss_function(targets[:, i], predictions)
           # using teacher forcing
-          dec_input = tf.expand_dims(target[:, i], 1)
-  total_loss = (loss / int(target.shape[1]))
+          dec_input = tf.expand_dims(targets[:, i], 1)
+  total_loss = (loss / int(targets.shape[1]))
   trainable_variables = encoder.trainable_variables + decoder.trainable_variables
   gradients = tape.gradient(loss, trainable_variables)
   optimizer.apply_gradients(zip(gradients, trainable_variables))
@@ -78,16 +78,16 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention, decode
     for epoch in range(start_epoch, EPOCHS):
         start = time.time()
         total_loss = 0
-        train_ds_meta = train_ds_meta.shuffle(num_train_examples).batch(BATCH_SIZE)
-        for (batch, (img_paths, target)) in enumerate(train_ds_meta):
+        train_ds_meta = train_ds_meta.shuffle(num_train_examples).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
+        for (batch, (img_paths, targets)) in enumerate(train_ds_meta):
             # Read in images from paths
-            img_tensor = load_image_batch(img_paths)
+            img_batch = load_image_batch(img_paths)
             # Perform training on one image
-            batch_loss, t_loss = train_step(img_tensor, target, decoder, attention, encoder, tokenizer, optimizer)
+            batch_loss, t_loss = train_step(img_batch, targets, decoder, attention, encoder, tokenizer, optimizer)
             total_loss += t_loss
             # if batch % 100 == 0:
             #     print ('Epoch {} Batch {} Loss {:.4f}'.format(
-            #         epoch + 1, batch, batch_loss.numpy() / int(target.shape[1])))
+            #         epoch + 1, batch, batch_loss.numpy() / int(targets.shape[1])))
         # storing the epoch end loss value to plot later
         loss_plot.append(total_loss / num_steps)
         if epoch % 5 == 0:

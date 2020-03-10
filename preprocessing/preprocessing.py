@@ -3,27 +3,9 @@ import csv
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
-"""
-def _load_image(image_path):
-    img = tf.io.read_file(image_path)
-    img = tf.image.decode_jpeg(img, channels=3)
-    img = tf.image.resize(img, (299, 299))
-    img = tf.keras.applications.inception_v3.preprocess_input(img)
-    return img, image_path
-
-def _store_img_extracted_features(encode_train):
-    image_dataset = tf.data.Dataset.from_tensor_slices(encode_train)
-    image_features_extract_model = img_extract_model()
-    image_dataset = image_dataset.map(
-        load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE).batch(16)
-    for img, path in image_dataset:
-        batch_features = image_features_extract_model(img)
-        batch_features = tf.reshape(batch_features,
-                                    (batch_features.shape[0], -1, batch_features.shape[3]))
-        for bf, p in zip(batch_features, path):
-            path_of_feature = p.numpy().decode("utf-8")
-            np.save(path_of_feature, bf.numpy())
-"""
+# Find the maximum length of any caption in our dataset
+def calc_max_length(tensor):
+    return max(len(t) for t in tensor)
 
 def _tokenize_words(max_words, captions, tokenizer):
 
@@ -45,8 +27,10 @@ def _tokenize_words(max_words, captions, tokenizer):
 
     # train_seqs: unpadded captions in form of integer sequences, each int identifying unique word
     # from vocab of size max_words
-
-    return cap_vector, train_seqs
+    
+    max_capt_len = calc_max_length(train_seqs)
+    
+    return cap_vector, train_seqs, max_capt_len
 
 
 """
@@ -76,7 +60,7 @@ def get_meta_datasets(captions_file_path, images_path, tokenizer, max_words, dat
     img_name_list, captions_list = get_image_caption_list(captions_file_path, images_path, debug)
 
     # Tokenize words
-    cap_list, _ = _tokenize_words(max_words, captions_list, tokenizer)  # cap_vector = list of paddeded integer sequences representing captions
+    cap_list, _, max_capt_len = _tokenize_words(max_words, captions_list, tokenizer)  # cap_vector = list of paddeded integer sequences representing captions
 
     # Shuffle captions and image names together
     # Set a random state
@@ -114,4 +98,4 @@ def get_meta_datasets(captions_file_path, images_path, tokenizer, max_words, dat
     # Test data set
     test_ds_meta = tf.data.Dataset.from_tensor_slices((img_names_test, caps_test))
 
-    return train_ds_meta, valid_ds_meta, test_ds_meta
+    return train_ds_meta, valid_ds_meta, test_ds_meta, max_capt_len

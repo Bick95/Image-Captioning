@@ -9,39 +9,52 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 from preprocessing.preprocessing import *
-from utils.utils import *
+from utils.utils import load_image
 
-def evaluate(image, tokenizer, max_length, decoder, encoder):
-    attention_plot = np.zeros((max_length, attention_features_shape))
+def evaluate(test_meta_ds, tokenizer, max_length, encoder, attention, decoder):
+	
+	# TODO: Scale to multiple tests
+	ds_list = list(test_meta_ds.as_numpy_iterator())
+	img_paths = [x[0] for x in ds_list]
+	captions  = [x[1] for x in ds_list]
 
-    hidden = decoder.reset_state(batch_size=1)
+	# Get first img path + caption
+	img_path = img_paths[0]
+	caption  = captions[0]  # one of 5 ground truths per images
 
-    temp_input = tf.expand_dims(load_image(image)[0], 0)
-    image_features_extract_model = img_extract_model()
-    img_tensor_val = image_features_extract_model(temp_input)
-    print(type(img_tensor_val))
-    img_tensor_val = tf.reshape(img_tensor_val, (img_tensor_val.shape[0], -1, img_tensor_val.shape[3]))
-    print(img_tensor_val.shape)
-    features = encoder(img_tensor_val)
+	batch_size = 1
 
-    dec_input = tf.expand_dims([tokenizer.word_index['<start>']], 0)
-    result = []
+	attention_plot = np.zeros((max_length, attention_features_shape))
 
-    for i in range(max_length):
-        predictions, hidden, attention_weights = decoder(dec_input, features, hidden)
+	# Initialize
+	hidden = decoder.reset_state(batch_size=batch_size) # Get initial hidden state
+	image = tf.expand_dims(load_image(img_path), 0) # Load image
+	
+	# Feed image through network
+	features = encoder(image)
+	print(type(features))
+	#features = tf.reshape(features, (features.shape[0], -1, features.shape[3]))
+	#print(features.shape)
 
-        attention_plot[i] = tf.reshape(attention_weights, (-1, )).numpy()
+	dec_input = tf.expand_dims([tokenizer.word_index['<start>']], 0)
+	result = []
 
-        predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()
-        result.append(tokenizer.index_word[predicted_id])
+	for i in range(max_length):
+		context_vector, attention_weights = attention(features, hidden)
+		predictions, hidden = decoder(dec_input, context_vector)
 
-        if tokenizer.index_word[predicted_id] == '<end>':
-            return result, attention_plot
+		attention_plot[i] = tf.reshape(attention_weights, (-1, )).numpy()
 
-        dec_input = tf.expand_dims([predicted_id], 0)
+		predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()
+		result.append(tokenizer.index_word[predicted_id])
 
-    attention_plot = attention_plot[:len(result), :]
-    return result, attention_plot
+		if tokenizer.index_word[predicted_id] == '<end>':
+			return result, attention_plot
+
+		dec_input = tf.expand_dims([predicted_id], 0)
+
+	attention_plot = attention_plot[:len(result), :]
+	return result, attention_plot
 
 '''
 def plot_attention(image, result, attention_plot):

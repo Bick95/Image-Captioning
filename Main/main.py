@@ -15,15 +15,10 @@ from Encoder.encoder import *
 
 
 def main():
-    # img_list, caption_list = get_image_n_caption(csv_file_path, image_path, debug)
-    # caption_vector, tokenizer, train_seqs = tokenize_words(max_words, caption_list)
-    # max_length = max_len_tensor(train_seqs)
-    # img_name_train, img_name_val, cap_train, cap_val = split(img_list, caption_vector) # TODO: reserve test data as well!
-
-    # Encoding-Attention-Decoding Architecture
     tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=max_words,
                                                       oov_token="<unk>",
                                                       filters='!"#$%&()*+.,-/:;=?@[\]^_`{|}~ ')
+    # Encoding-Attention-Decoding Architecture
     encoder = InceptionEncoder(embedding_dim)
     attention = SoftAttention(units)
     decoder = RNNDecoder(embedding_dim, units, vocab_size)
@@ -31,15 +26,17 @@ def main():
     data_split = dict(train=0.70,
                       valid=0.15,
                       test=0.15)
-
-    train_ds_meta, valid_ds_meta, test_ds_meta = get_meta_datasets(captions_file_path, images_path, tokenizer,
+	
+	# train_ds_meta = (img_names_train = [img_path_1, ..., img_path_n], caps_train = [num_capt_1, ..., num_capt_n])
+    train_ds_meta, valid_ds_meta, test_ds_meta, max_length = get_meta_datasets(captions_file_path, images_path, tokenizer,
                                                                   max_words, data_split, debug)
 
+	# TODO: double-check if the encoder, decoder, ... really don't need re-assignment after training. But for tokenizer it also seems to work like that. 
     training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention, decoder)
 
-    result, attention_plot = evaluate(test_ds_meta, tokenizer, max_length, decoder, encoder)
+    result, attention_plot = evaluate(test_ds_meta, tokenizer, max_length, encoder, attention, decoder)
 
-    print('Real Caption:', real_caption)
+    #print('Real Caption:', real_caption) # TODO: where does that come from? There is not just 1, but 5 possible ones...
     print('Prediction Caption:', ' '.join(result))
 
 

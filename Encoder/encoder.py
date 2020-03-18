@@ -5,7 +5,6 @@ sys.path.append(os.path.dirname(os.getcwd()))
 # Imports
 import tensorflow as tf
 
-
 class InceptionEncoder(tf.keras.Model):
     def __init__(self, embedding_dim):
         super(InceptionEncoder, self).__init__()
@@ -16,6 +15,3 @@ class InceptionEncoder(tf.keras.Model):
         x = self.fc(x)
         x = tf.nn.relu(x)
         return x
-    
-    
-

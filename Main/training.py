@@ -127,9 +127,6 @@ def training(encoder, decoder, train_data, val_data, tokenizer):
             check_patience = check_patience + 1
         if(check_patience > Patience):
             break
-
-
-
     return loss_plot_train, loss_plot_val
 
 

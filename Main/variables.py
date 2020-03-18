@@ -22,3 +22,5 @@ attention_features_shape = 64
 EPOCHS = 20
 
 Patience = 10  #Patience of early stopping
+
+plot_attention_list = [1, 10, 100]

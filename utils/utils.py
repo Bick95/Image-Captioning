@@ -6,6 +6,8 @@ import numpy as np
 from sklearn.preprocessing import *
 import tensorflow as tf
 from preprocessing.preprocessing import *
+
+from PIL import Image
 '''
 Functions stores the location of the image and the corresponding caption.
 Location and the captions are returned as independent list.
@@ -26,7 +28,7 @@ def get_image_n_caption(csv_file_path,images_path,debug):
             if(not debug):
                 continue
             cnt = cnt + 1
-            if(cnt == 100):
+            if(cnt == 150):
                 break
     img_name_list = img_name_list[1:] #1st row contains column names.
     caption_list  = caption_list[1:]  #1st row contains column names.
@@ -73,6 +75,5 @@ def split(img_name_vector, cap_vector, split_ratio):
 def map_func(img_name, cap):
   img_tensor = np.load(img_name.decode('utf-8')+'.npy')
   return img_tensor, cap
-
 
 

@@ -21,7 +21,13 @@ class RNNDecoder(tf.keras.Model):
 
     def call(self, x, features, hidden):
         # defining Attention as a separate model
+        # print("INSIDE DECODER")
+        # print("Shape of x is ",x.shape)
+        # print("Features is ",features.shape)
+        # print("Hidden is ",hidden.shape)
+
         context_vector, attention_weights = self.attention(features, hidden)
+        #
         # x shape after passing through embedding == (batch_size, 1, embedding_dim)
         x = self.embedding(x)
         # x shape after concatenation == (batch_size, 1, embedding_dim + hidden_size)

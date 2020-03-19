@@ -34,18 +34,18 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
     hidden = decoder.reset_state(batch_size=targets.shape[0])
     dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * targets.shape[0], 1)
 
-    print('Img bt:', img_batch.shape)
-    print('Trg bt:', targets.shape)
+    print('Shape image batch:', img_batch.shape)
+    print('Shape targets:', targets.shape)
 
     # Prediction step
     with tf.GradientTape() as tape:
         features = encoder(img_batch)
-        print('Feat shape:', features.shape)
+        print('Shape features:', features.shape)
         # Repeat, appending caption by one word at a time
         for i in range(1, targets.shape[1]):
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
-            print('ContVec shape:', context_vector.shape)
+            print('Shape context vector:', context_vector.shape)
             predictions, hidden = decoder(dec_input, context_vector)  # FIXME: prediction of caption not as in paper
 
             loss += loss_function(targets[:, i], predictions)

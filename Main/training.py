@@ -34,18 +34,19 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
     hidden = decoder.reset_state(batch_size=targets.shape[0])
     dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * targets.shape[0], 1)
 
-    print('Shape image batch:', img_batch.shape)
-    print('Shape targets:', targets.shape)
+    print('TS - Shape image batch:', img_batch.shape)
+    print('TS - Shape targets:', targets.shape)
 
     # Prediction step
     with tf.GradientTape() as tape:
         features = encoder(img_batch)
-        print('Shape features:', features.shape)
+        print('TS - Shape features:', features.shape)
         # Repeat, appending caption by one word at a time
+        print('TS - Shape targets:', targets.shape)
         for i in range(1, targets.shape[1]):
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
-            print('Shape context vector:', context_vector.shape)
+            print('TS - Shape context vector:', context_vector.shape)
             predictions, hidden = decoder(dec_input, context_vector)  # FIXME: prediction of caption not as in paper
 
             loss += loss_function(targets[:, i], predictions)
@@ -66,11 +67,18 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
 
 def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder):
 
-    num_train_examples = len(list(train_ds_meta))
-    num_steps = num_train_examples // BATCH_SIZE
+    print('Shape train-ds:', train_ds_meta)
+    print('Shape valid-ds:', valid_ds_meta)
+    print('Valid dataset:')
+    for element in valid_ds_meta:
+        print(element)
+    print('End valid dataset.')
 
-    #num_val_examples = len(list(val_data))
-    #num_steps_val = num_val_examples // BATCH_SIZE
+    num_train_examples = len(list(train_ds_meta))
+    num_steps_train = num_train_examples // BATCH_SIZE
+
+    num_val_examples = len(list(valid_ds_meta))
+    num_steps_val = num_val_examples // BATCH_SIZE
 
     # Get Optimizer and loss Object
     optimizer = get_optimizer()
@@ -92,36 +100,48 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
     min_validation_loss = 1000
     check_patience = 0
 
+    # Shuffle data
+    train_ds_meta = train_ds_meta.shuffle(buffer_size=num_train_examples,
+                                          reshuffle_each_iteration=True).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
+    valid_ds_meta = valid_ds_meta.shuffle(buffer_size=num_train_examples,
+                                          reshuffle_each_iteration=False).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
+
     # Start the training
     for epoch in range(start_epoch, EPOCHS):
+        print('EPOCH:', epoch)
         start = time.time()
         total_loss_train = 0
         total_loss_val = 0
 
         # TRAINING LOOP
-        train_ds_meta = train_ds_meta.shuffle(num_train_examples).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
+        print('##### TRAINING #####')
         for (batch, (img_paths, targets)) in enumerate(train_ds_meta):
             # Read in images from paths
             img_batch = load_image_batch(img_paths)
-            print(img_batch.shape)
+            print('Shape image batch:', img_batch.shape)
+            print('Shape targets:', targets.shape)
             # Perform training on one image
             batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                             optimizer, 1)  # 1 - weights trainable
             total_loss_train += t_loss
-
+        print('##### END TRAINING #####')
         loss_plot_val.append(total_loss_train / num_steps_train)
         print('Epoch {} Loss {:.6f}'.format(epoch + 1,
                                             total_loss_train / num_steps_train))
         print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
 
+        print('##### VALIDATION #####')
         # VALIDATION LOOP
-        for (batch, (img_batch, targets)) in enumerate(valid_ds_meta):
+        for (batch, (img_paths, targets)) in enumerate(valid_ds_meta):
             img_batch = load_image_batch(img_paths)
+            print('Shape image batch:', img_batch.shape)
+            print('Shape targets:', targets.shape)
             batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                             optimizer, 0)  # 0 - weights not trainable
             total_loss_val += t_loss
 
         val_loss = total_loss_val / num_steps_val
+        print('##### END VALIDATION #####')
         loss_plot_val.append(val_loss)
         print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1,
                                                          val_loss))

@@ -21,7 +21,7 @@ def load_image(image_path):
     img = tf.keras.applications.inception_v3.preprocess_input(img)
     return img, image_path
 '''
-
+'''
 def img_extract_model():
     image_model = tf.keras.applications.InceptionV3(include_top=False,
                                                     weights='imagenet')
@@ -29,7 +29,7 @@ def img_extract_model():
     hidden_layer = image_model.layers[-1].output
     image_features_extract_model = tf.keras.Model(new_input, hidden_layer)
     return image_features_extract_model
-
+'''
 
 '''
 def store_img_extracted_features(encode_train):

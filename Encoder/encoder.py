@@ -8,12 +8,12 @@ import tensorflow as tf
 
 
 class InceptionEncoder(tf.keras.Model):
-    def __init__(self, embedding_dim):
+    def __init__(self, embedding_dim, conv_trainable=False):
         super(InceptionEncoder, self).__init__()
 
         ## Convolutional NN (Inception-based)
         self.features_extract_model = tf.keras.applications.InceptionV3(include_top=False, weights='imagenet')
-        self.features_extract_model.trainable = False
+        self.features_extract_model.trainable = conv_trainable
 
         # Test
         image_model = tf.keras.applications.InceptionV3(include_top=False,

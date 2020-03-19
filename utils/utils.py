@@ -91,7 +91,6 @@ def load_image_batch(image_paths):
     batch = tf.zeros([1, 299, 299, 3], tf.float32)  # Placeholder
     for idx, path in enumerate(image_paths):
         batch = tf.concat((batch, [load_image(path) / 255.]), axis=0)
-    print('Shape batch:', batch.shape)
     return batch[1:]  # Remove first empty element
 
 

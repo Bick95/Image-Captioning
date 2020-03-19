@@ -24,13 +24,13 @@ def main():
 
    index.sort(reverse=True)
 
-   print("Before ",img_list)
+
 
    for i in index:
         del img_list[i]
         del caption_list[i]
 
-   print("After ",img_list)
+
    # print(plot_attention_caption_list)
    # print(plot_attention_img_list)
    caption_vector, train_seqs, max_length, tokenizer = tokenize_words(caption_list,tokenizer)

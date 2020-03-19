@@ -22,10 +22,15 @@ def main():
 
    index = [i for i, e in enumerate(img_list) if e in plot_attention_img_list]
 
+   index.sort(reverse=True)
+
+   print("Before ",img_list)
+
    for i in index:
         del img_list[i]
         del caption_list[i]
 
+   print("After ",img_list)
    # print(plot_attention_caption_list)
    # print(plot_attention_img_list)
    caption_vector, train_seqs, max_length, tokenizer = tokenize_words(caption_list,tokenizer)
@@ -41,11 +46,12 @@ def main():
    bleu_score = evaluate(test_data,encoder,decoder, max_length, tokenizer)
    print("bleu score is ",bleu_score)
    count = 0
+   '''
    for img in plot_attention_img_list:
 
        result, attention_plot = get_plot_attention(img,encoder,decoder, max_length, tokenizer)
        plot_attention(img, result, attention_plot, count)
        count = count + 1
-
+   '''
 if __name__ == '__main__':
     main()

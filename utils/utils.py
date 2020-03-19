@@ -1,13 +1,13 @@
-import csv
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
-import numpy as np
-from sklearn.preprocessing import *
+#import csv
+#import pandas as pd
+#from sklearn.model_selection import train_test_split
+#from sklearn.utils import shuffle
+#import numpy as np
+#from sklearn.preprocessing import *
+#import tensorflow as tf
+#from preprocessing.preprocessing import *
 import tensorflow as tf
-from preprocessing.preprocessing import *
-
-from PIL import Image
+from variables import *
 
 '''
 Functions stores the location of the image and the corresponding caption.
@@ -15,7 +15,7 @@ Location and the captions are returned as independent list.
 This will also save the extracted features from the images.
 '''
 
-
+'''
 def get_image_n_caption(csv_file_path, images_path, debug):
     caption_list = []
     img_name_list = []
@@ -24,7 +24,6 @@ def get_image_n_caption(csv_file_path, images_path, debug):
         data = csv.reader(csvfile, delimiter='|')
         for row in data:
             try:
-                img_name = ""
                 img_name = images_path + row[0]
                 caption = '<start> ' + row[2] + ' <end>'
                 img_name_list.append(img_name)
@@ -43,8 +42,8 @@ def get_image_n_caption(csv_file_path, images_path, debug):
     encode_train = sorted(set(img_name_list))
     store_img_extracted_features(encode_train)  # Store the extracted features from the images.
     return img_name_list, caption_list
-
-
+'''
+'''
 def split(img_name_vector, cap_vector, split_ratio):
     img_name_vector, cap_vector = shuffle(img_name_vector,
                                           cap_vector,
@@ -78,8 +77,26 @@ def split(img_name_vector, cap_vector, split_ratio):
 
     test_ds_meta = [img_names_test, caps_test]
     return train_ds_meta, valid_ds_meta, test_ds_meta
+'''
 
 
+def load_image(image_path):
+    img = tf.io.read_file(image_path)
+    img = tf.image.decode_jpeg(img, channels=3)
+    img = tf.image.resize(img, (299, 299))
+    return img
+
+
+def load_image_batch(image_paths):
+    batch = tf.zeros([1, 299, 299, 3], tf.float32)  # Placeholder
+    for idx, path in enumerate(image_paths):
+        batch = tf.concat((batch, [load_image(path) / 255.]), axis=0)
+    print('Shape batch:', batch.shape)
+    return batch[1:]  # Remove first empty element
+
+
+'''
 def map_func(img_name, cap):
     img_tensor = np.load(img_name.decode('utf-8') + '.npy')
     return img_tensor, cap
+'''

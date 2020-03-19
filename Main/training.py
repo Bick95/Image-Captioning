@@ -3,7 +3,7 @@ import os, sys
 
 sys.path.append(os.path.dirname(os.getcwd()))
 import tensorflow as tf
-from utils.utils import *
+from utils.utils import load_image_batch, load_image
 from variables import *
 import time
 
@@ -27,28 +27,32 @@ def loss_function(real, pred):
 
 
 @tf.function
-def train_step(img_tensor, target, decoder, attention_module, encoder, tokenizer, optimizer, train_flag):
+def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer, optimizer, train_flag):
     loss = 0
     # Initializing the hidden state for each batch
     # because the captions are not related from image to image
-    hidden = decoder.reset_state(batch_size=target.shape[0])
-    dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * target.shape[0], 1)
+    hidden = decoder.reset_state(batch_size=targets.shape[0])
+    dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * targets.shape[0], 1)
+
+    print('Img bt:', img_batch.shape)
+    print('Trg bt:', targets.shape)
 
     # Prediction step
     with tf.GradientTape() as tape:
-        features = encoder(img_tensor)
-
+        features = encoder(img_batch)
+        print('Feat shape:', features.shape)
         # Repeat, appending caption by one word at a time
-        for i in range(1, target.shape[1]):
+        for i in range(1, targets.shape[1]):
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
+            print('ContVec shape:', context_vector.shape)
             predictions, hidden = decoder(dec_input, context_vector)  # FIXME: prediction of caption not as in paper
 
-            loss += loss_function(target[:, i], predictions)
+            loss += loss_function(targets[:, i], predictions)
             # Using teacher forcing
-            dec_input = tf.expand_dims(target[:, i], 1)
+            dec_input = tf.expand_dims(targets[:, i], 1)
 
-    total_loss = (loss / int(target.shape[1]))
+    total_loss = (loss / int(targets.shape[1]))
 
     # Update step
     if train_flag:
@@ -60,31 +64,13 @@ def train_step(img_tensor, target, decoder, attention_module, encoder, tokenizer
     return loss, total_loss
 
 
-def training(encoder, attention_module, decoder, train_data, val_data, tokenizer):
-    num_train_examples = len(list(train_data))
-    num_steps_train = num_train_examples // BATCH_SIZE
+def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder):
 
-    num_val_examples = len(list(val_data))
-    num_steps_val = num_val_examples // BATCH_SIZE
+    num_train_examples = len(list(train_ds_meta))
+    num_steps = num_train_examples // BATCH_SIZE
 
-    # Get the data ready for training
-    # Use map to load the numpy files in parallel for train data
-    train_data = train_data.map(lambda item1, item2: tf.numpy_function(
-        map_func, [item1, item2], [tf.float32, tf.int32]),
-                                num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-    # Shuffle and batch the training data
-    train_data = train_data.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-    train_data = train_data.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-
-    # Use map to load the numpy files in parallel for val data
-    val_data = val_data.map(lambda item1, item2: tf.numpy_function(
-        map_func, [item1, item2], [tf.float32, tf.int32]),
-                            num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-    # Shuffle and batch the Validation data
-    val_data = val_data.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-    val_data = val_data.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    #num_val_examples = len(list(val_data))
+    #num_steps_val = num_val_examples // BATCH_SIZE
 
     # Get Optimizer and loss Object
     optimizer = get_optimizer()
@@ -105,6 +91,7 @@ def training(encoder, attention_module, decoder, train_data, val_data, tokenizer
     loss_plot_val = []
     min_validation_loss = 1000
     check_patience = 0
+
     # Start the training
     for epoch in range(start_epoch, EPOCHS):
         start = time.time()
@@ -112,8 +99,13 @@ def training(encoder, attention_module, decoder, train_data, val_data, tokenizer
         total_loss_val = 0
 
         # TRAINING LOOP
-        for (batch, (img_tensor, target)) in enumerate(train_data):
-            batch_loss, t_loss = train_step(img_tensor, target, decoder, attention_module, encoder, tokenizer,
+        train_ds_meta = train_ds_meta.shuffle(num_train_examples).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
+        for (batch, (img_paths, targets)) in enumerate(train_ds_meta):
+            # Read in images from paths
+            img_batch = load_image_batch(img_paths)
+            print(img_batch.shape)
+            # Perform training on one image
+            batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                             optimizer, 1)  # 1 - weights trainable
             total_loss_train += t_loss
 
@@ -123,8 +115,9 @@ def training(encoder, attention_module, decoder, train_data, val_data, tokenizer
         print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
 
         # VALIDATION LOOP
-        for (batch, (img_tensor, target)) in enumerate(val_data):
-            batch_loss, t_loss = train_step(img_tensor, target, decoder, attention_module, encoder, tokenizer,
+        for (batch, (img_batch, targets)) in enumerate(valid_ds_meta):
+            img_batch = load_image_batch(img_paths)
+            batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                             optimizer, 0)  # 0 - weights not trainable
             total_loss_val += t_loss
 

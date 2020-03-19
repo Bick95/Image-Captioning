@@ -13,6 +13,7 @@ from preprocessing.preprocessing import *
 from utils.utils import *
 from nltk.translate.bleu_score import sentence_bleu
 import matplotlib.pyplot as plt
+import math
 
 
 # def evaluate(image, tokenizer, max_length, decoder, encoder):
@@ -74,9 +75,10 @@ def plot_attention(image, result, attention_plot, count):
     temp_image = np.array(Image.open(image))
     fig = plt.figure(figsize=(40, 40))
     len_result = len(result)
+    print(result)
     for l in range(len_result):
         temp_att = np.resize(attention_plot[l], (8, 8))
-        ax = fig.add_subplot(len_result // 2, len_result // 2, l + 1)
+        ax = fig.add_subplot(math.ceil(float(len_result) / 2.), len_result // 2, l + 1)
         ax.set_title(result[l])
         img = ax.imshow(temp_image)
         ax.imshow(temp_att, cmap='gray', alpha=0.6, extent=img.get_extent())

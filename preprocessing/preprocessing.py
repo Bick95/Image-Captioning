@@ -1,9 +1,8 @@
 import tensorflow as tf
-#import zip
+# import zip
 import numpy as np
-#from itertools import izip
+# from itertools import izip
 from utils.utils import *
-
 
 
 def max_len_tensor(tensor):
@@ -17,6 +16,7 @@ def load_image(image_path):
     img = tf.keras.applications.inception_v3.preprocess_input(img)
     return img, image_path
 
+
 def img_extract_model():
     image_model = tf.keras.applications.InceptionV3(include_top=False,
                                                     weights='imagenet')
@@ -24,6 +24,7 @@ def img_extract_model():
     hidden_layer = image_model.layers[-1].output
     image_features_extract_model = tf.keras.Model(new_input, hidden_layer)
     return image_features_extract_model
+
 
 def store_img_extracted_features(encode_train):
     image_dataset = tf.data.Dataset.from_tensor_slices(encode_train)
@@ -38,7 +39,8 @@ def store_img_extracted_features(encode_train):
             path_of_feature = p.numpy().decode("utf-8")
             np.save(path_of_feature, bf.numpy())
 
-def tokenize_words(captions,tokenizer):
+
+def tokenize_words(captions, tokenizer):
     tokenizer.fit_on_texts(captions)
     tokenizer.word_index['<pad>'] = 0
     tokenizer.index_word[0] = '<pad>'

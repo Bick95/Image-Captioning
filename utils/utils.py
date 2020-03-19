@@ -23,15 +23,20 @@ def get_image_n_caption(csv_file_path, images_path, debug):
     with open(csv_file_path, 'r') as csvfile:
         data = csv.reader(csvfile, delimiter='|')
         for row in data:
-            img_name = ""
-            img_name = images_path + row[0]
-            caption = '<start> ' + row[2] + ' <end>'
-            img_name_list.append(img_name)
-            caption_list.append(caption)
-            if (not debug):
+            try:
+                img_name = ""
+                img_name = images_path + row[0]
+                caption = '<start> ' + row[2] + ' <end>'
+                img_name_list.append(img_name)
+                caption_list.append(caption)
+            except IndexError:
+                # Handle erroneous dataset entries
+                print('Skipped: ', row)
+
+            if not debug:
                 continue
             cnt = cnt + 1
-            if (cnt == 150):
+            if cnt == 150:
                 break
     img_name_list = img_name_list[1:]  # 1st row contains column names.
     caption_list = caption_list[1:]  # 1st row contains column names.

@@ -54,6 +54,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             loss += loss_function(targets[:, i], predictions)
             # Using teacher forcing
             dec_input = tf.expand_dims(targets[:, i], 1)
+            print('Decoder input:\n', dec_input)
 
     total_loss = (loss / float(targets.shape[1]))
     #print('Constructing captions done.')

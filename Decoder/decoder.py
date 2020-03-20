@@ -32,6 +32,7 @@ class RNNDecoder(tf.keras.Model):
         x = tf.reshape(x, (-1, x.shape[2]))
         # output shape == (batch_size * max_length, vocab)
         x = self.fc2(x)
+        #x = # TODO: softmax
         return x, state
 
     def reset_state(self, batch_size):

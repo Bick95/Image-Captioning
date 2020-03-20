@@ -16,20 +16,23 @@ import matplotlib.pyplot as plt
 import math
 
 
-# def evaluate(image, tokenizer, max_length, decoder, encoder):
-
-def evaluate(test_data, encoder, attention_module, decoder, max_length, tokenizer):
-    images = test_data[0]
-    captions = test_data[1]
+def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, tokenizer):
+    #images = test_data[0]
+    #captions = test_data[1]
     score = 0
-    for image, caption in zip(images, captions):
-        real_caption = ' '.join([tokenizer.index_word[i] for i in caption if i not in [0]])
+    #for image, caption in zip(images, captions):
+    for (idx, (img_path, caption)) in enumerate(test_ds_meta):
+        caption = caption.numpy()[1:-1]  # Convert to numpy array abd remove start token
+        print('Idx:', idx)
+        print('Eval Img path:', img_path)
+        print('Eval Caption:', caption)
+        real_caption = ' '.join([tokenizer.index_word[i] for i in caption])
         hidden = decoder.reset_state(batch_size=1)
-        temp_input = tf.expand_dims(load_image(image)[0], 0)
-        image_features_extract_model = img_extract_model()
-        img_tensor_val = image_features_extract_model(temp_input)
-        img_tensor_val = tf.reshape(img_tensor_val, (img_tensor_val.shape[0], -1, img_tensor_val.shape[3]))
-        features = encoder(img_tensor_val)
+
+        # Get image (pseudo-batch of 1 element)
+        pseudo_img_batch = tf.expand_dims(load_image(img_path), 0)
+
+        features = encoder(pseudo_img_batch)
         dec_input = tf.expand_dims([tokenizer.word_index['<start>']], 0)
         result = []
         for i in range(max_length):
@@ -37,13 +40,15 @@ def evaluate(test_data, encoder, attention_module, decoder, max_length, tokenize
             context_vector, attention_weights = attention_module(features, hidden)
             predictions, hidden = decoder(dec_input, context_vector)  # FIXME: prediction of caption not as in paper
             predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()
+            predicted_id = min(predicted_id, max_words)  # Avoid going out of bounds, which would cause exception
             result.append(tokenizer.index_word[predicted_id])
             if tokenizer.index_word[predicted_id] == '<end>':
                 score = score + sentence_bleu(real_caption, result, weights=(0, 0.5, 0.5, 0))
                 break
             dec_input = tf.expand_dims([predicted_id], 0)
+        print('Result:', result)
     score = score + sentence_bleu(real_caption, result, weights=(0, 0.5, 0.5, 0))
-    return score / len(images)
+    return score / len(list(test_ds_meta))
 
 
 # Get the caption and the attention plot for the image

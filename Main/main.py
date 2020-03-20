@@ -75,7 +75,9 @@ def main():
                                               encoder, attention_module, decoder)
     print('Done training.')
 
-    # TODO/FIXME: adjust evaluation procedure!
+    # TODO/FIXME: adjust evaluation procedure!  (1 - prio)
+
+    # TODO/FIXME: adjust output behavior of decoder!  (2)
     bleu_score = evaluate(test_ds_meta, encoder, attention_module, decoder, max_capt_len, tokenizer)
     print('Done with evaluation.')
 

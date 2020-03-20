@@ -28,27 +28,27 @@ def loss_function(real, pred):
 
 @tf.function
 def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer, optimizer, train_flag):
-    print('Train step......')
+    #print('Train step......')
     loss = 0
     # Initializing the hidden state for each batch
     # because the captions are not related from image to image
     hidden = decoder.reset_state(batch_size=targets.shape[0])
     dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * targets.shape[0], 1)
 
-    print('TS - Shape image batch:', img_batch.shape)
-    print('TS - Shape targets:', targets.shape)
+    #print('TS - Shape image batch:', img_batch.shape)
+    #print('TS - Shape targets:', targets.shape)
 
     # Prediction step
     with tf.GradientTape() as tape:
         features = encoder(img_batch)
-        print('TS - Shape features:', features.shape)
+        #print('TS - Shape features:', features.shape)
         # Repeat, appending caption by one word at a time
-        print('TS - Shape targets:', targets.shape)
-        print('Going to construct captions...')
+        #print('TS - Shape targets:', targets.shape)
+        #print('Going to construct captions...')
         for i in range(1, targets.shape[1]):
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
-            print('TS - Shape context vector:', context_vector.shape)
+            #print('TS - Shape context vector:', context_vector.shape)
             predictions, hidden = decoder(dec_input, context_vector)  # FIXME: prediction of caption not as in paper
 
             loss += loss_function(targets[:, i], predictions)
@@ -56,7 +56,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             dec_input = tf.expand_dims(targets[:, i], 1)
 
     total_loss = (loss / float(targets.shape[1]))
-    print('Constructing captions done.')
+    #print('Constructing captions done.')
     # Update step
     if train_flag:
         trainable_variables = encoder.trainable_variables + decoder.trainable_variables + \
@@ -69,12 +69,12 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
 
 def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder):
 
-    print('Shape train-ds:', train_ds_meta)
-    print('Shape valid-ds:', valid_ds_meta)
-    print('Valid dataset:')
-    for element in valid_ds_meta:
-        print(element)
-    print('End valid dataset.')
+    #print('Shape train-ds:', train_ds_meta)
+    #print('Shape valid-ds:', valid_ds_meta)
+    #print('Valid dataset:')
+    #for element in valid_ds_meta:
+    #    print(element)
+    #print('End valid dataset.')
 
     num_train_examples = len(list(train_ds_meta))
     num_steps_train = num_train_examples // BATCH_SIZE
@@ -123,8 +123,8 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
             print(img_paths)
             # Read in images from paths
             img_batch = load_image_batch(img_paths)
-            print('t - Shape image batch:', img_batch.shape)
-            print('t - Shape targets:', targets.shape)
+            #print('t - Shape image batch:', img_batch.shape)
+            #print('t - Shape targets:', targets.shape)
             # Perform training on one image
             batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                             optimizer, 1)  # 1 - weights trainable
@@ -151,11 +151,11 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         loss_plot_val.append(val_loss)
         print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1,
                                                          val_loss))
-        if (val_loss < min_validation_loss):
+        if val_loss < min_validation_loss:
             min_validation_loss = val_loss
             check_patience = 0
         else:
             check_patience = check_patience + 1
-        if (check_patience > Patience):
+        if check_patience > Patience:
             break
     return loss_plot_train, loss_plot_val

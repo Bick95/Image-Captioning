@@ -17,12 +17,12 @@ class InceptionEncoder(tf.keras.Model):
 
 
     def call(self, img_batch):
-        print('Inception module start')
-        print('Shape batch:', img_batch.shape)
+        #print('Inception module start')
+        #print('Shape batch:', img_batch.shape)
         features = self.features_extract_model(img_batch)
-        print('Shape extracted features:', features.shape)
+        #print('Shape extracted features:', features.shape)
         features = tf.reshape(features, (img_batch.shape[0], features.shape[1] * features.shape[2], features.shape[3]))
-        print('Shape features after reshape:', features.shape)
-        print('Shape features:', features.shape)
-        print('Inception module end')
+        #print('Shape features after reshape:', features.shape)
+        #print('Shape features:', features.shape)
+        #print('Inception module end')
         return features

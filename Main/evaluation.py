@@ -23,8 +23,9 @@ def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, token
         caption = caption.numpy()[1:]  # Convert to numpy array abd remove start token
         print('Idx:', idx)
         print('Eval Img path:', img_path)
-        print('Eval Caption:', caption)
         real_caption = ' '.join([tokenizer.index_word[i] for i in caption])
+        print('Eval Caption:', caption)
+        print('Eval Caption:', real_caption)
         hidden = decoder.reset_state(batch_size=1)  # Initial hidden state
 
         # Get image (pseudo-batch of 1 element)
@@ -38,7 +39,7 @@ def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, token
         for i in range(max_length):
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
-            predictions, hidden = decoder(dec_input, context_vector)  # FIXME: prediction of caption not as in paper
+            predictions, hidden = decoder(dec_input, context_vector)
             predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()
             test_num_capt.append(predicted_id)
             predicted_id = min(predicted_id, max_words)  # Avoid going out of bounds, which would cause exception
@@ -71,7 +72,7 @@ def get_plot_attention(img_path, encoder, attention_module, decoder, max_length,
     for i in range(max_length):
         # Passing the features through the attention module and decoder
         context_vector, attention_weights = attention_module(features, hidden)
-        predictions, hidden = decoder(dec_input, context_vector)  # FIXME: prediction of caption not as in paper
+        predictions, hidden = decoder(dec_input, context_vector)
         attention_plot[i] = tf.reshape(attention_weights, (-1,)).numpy()
         predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()
         result.append(tokenizer.index_word[predicted_id])

@@ -19,7 +19,7 @@ def main():
                                                       oov_token="<unk>",
                                                       filters='!"#$%&()*+.,-/:;=?@[\]^_`{|}~ ')
 
-    # TODO/FIXME: adjust output behavior of decoder!
+    # TODO/FIXME: adjust output behavior of decoder! Shall produce probability distribution over vocab
 
     data_split = dict(train=0.70,
                       valid=0.15,
@@ -30,6 +30,15 @@ def main():
         plot_attention_img_list, plot_attention_caption_list = get_meta_datasets(csv_file_path, image_path, tokenizer,
                                                                                  data_split, debug)
 
+    # Dataset Exploration
+    print('----------------------------------')
+    lst = list(train_ds_meta)
+    for (img_name_tensor, cap_tensor) in lst[:10]:
+        print('NEW IMAGE:')
+        print('Image:', (str(img_name_tensor.numpy()).split('/')[-1]).split('.')[0])
+        caption = ' '.join([tokenizer.index_word[i] for i in cap_tensor.numpy()])
+        print('Caption:', caption)
+    print('-----------------------------------')
 
     # Encoding-Attention-Decoding Architecture
     encoder = InceptionEncoder(embedding_dim)

@@ -2,6 +2,7 @@
 
 
 ###GLOBAL VARIABLES
+# Shubham's:
 #csv_file_path = "../data/flickr30k_images/results.csv"
 #image_path = "../data/flickr30k_images/flickr30k_images/"
 
@@ -14,8 +15,8 @@ image_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/flickr30k_ima
 debug = 1
 
 #Number of words to be considered while encoding
-if debug: # Vocab size rather low in debug mode
-    max_words = 434  # experimentally tested
+if debug:  # Vocab size rather low in debug mode
+    max_words = 400  # experimentally tested
 else:
     max_words = 5000
 
@@ -29,7 +30,7 @@ vocab_size = max_words + 1
 # These two variables represent that vector shape
 features_shape = 2048
 attention_features_shape = 64
-EPOCHS = 10
+EPOCHS = 40
 
 Patience = 10  #Patience of early stopping
 

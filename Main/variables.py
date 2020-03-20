@@ -15,7 +15,7 @@ debug = 1
 
 #Number of words to be considered while encoding
 if debug: # Vocab size rather low in debug mode
-    max_words = 200
+    max_words = 434  # experimentally tested
 else:
     max_words = 5000
 

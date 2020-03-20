@@ -1,10 +1,8 @@
 # Get access to parent directory
 import os, sys
+import tensorflow as tf
 
 sys.path.append(os.path.dirname(os.getcwd()))
-# Imports
-import tensorflow as tf
-from Attention.modules import *
 
 
 class RNNDecoder(tf.keras.Model):
@@ -21,13 +19,7 @@ class RNNDecoder(tf.keras.Model):
         self.fc2 = tf.keras.layers.Dense(vocab_size)
 
     def call(self, x, context_vector):
-        # defining Attention as a separate model
-        # print("INSIDE DECODER")
-        # print("Shape of x is ",x.shape)
-        # print("Features is ",features.shape)
-        # print("Hidden is ",hidden.shape)
 
-        #
         # x shape after passing through embedding == (batch_size, 1, embedding_dim)
         x = self.embedding(x)
         # x shape after concatenation == (batch_size, 1, embedding_dim + hidden_size)

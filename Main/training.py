@@ -28,6 +28,7 @@ def loss_function(real, pred):
 
 @tf.function
 def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer, optimizer, train_flag):
+    print('Train step......')
     loss = 0
     # Initializing the hidden state for each batch
     # because the captions are not related from image to image
@@ -43,6 +44,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
         print('TS - Shape features:', features.shape)
         # Repeat, appending caption by one word at a time
         print('TS - Shape targets:', targets.shape)
+        print('Going to construct captions...')
         for i in range(1, targets.shape[1]):
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
@@ -53,8 +55,8 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             # Using teacher forcing
             dec_input = tf.expand_dims(targets[:, i], 1)
 
-    total_loss = (loss / int(targets.shape[1]))
-
+    total_loss = (loss / float(targets.shape[1]))
+    print('Constructing captions done.')
     # Update step
     if train_flag:
         trainable_variables = encoder.trainable_variables + decoder.trainable_variables + \
@@ -115,11 +117,14 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
 
         # TRAINING LOOP
         print('##### TRAINING #####')
+        #for img_paths, targets in train_ds_meta.__iter__():
         for (batch, (img_paths, targets)) in enumerate(train_ds_meta):
+            print('Epoch:', epoch, 'Batch:', batch)
+            print(img_paths)
             # Read in images from paths
             img_batch = load_image_batch(img_paths)
-            print('Shape image batch:', img_batch.shape)
-            print('Shape targets:', targets.shape)
+            print('t - Shape image batch:', img_batch.shape)
+            print('t - Shape targets:', targets.shape)
             # Perform training on one image
             batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                             optimizer, 1)  # 1 - weights trainable
@@ -133,6 +138,7 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         print('##### VALIDATION #####')
         # VALIDATION LOOP
         for (batch, (img_paths, targets)) in enumerate(valid_ds_meta):
+            print('Batch:', batch)
             img_batch = load_image_batch(img_paths)
             print('Shape image batch:', img_batch.shape)
             print('Shape targets:', targets.shape)

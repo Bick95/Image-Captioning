@@ -23,9 +23,6 @@ class InceptionEncoder(tf.keras.Model):
         image_features_extract_model = tf.keras.Model(new_input, hidden_layer)
         self.features_extract_model = image_features_extract_model
 
-        # shape after fc == (batch_size, 64, embedding_dim)
-        self.fc = tf.keras.layers.Dense(embedding_dim)
-
     def call(self, img_batch):
         print('Inception module start')
         print('Shape batch:', img_batch.shape)
@@ -33,8 +30,6 @@ class InceptionEncoder(tf.keras.Model):
         print('Shape extracted features:', features.shape)
         features = tf.reshape(features, (img_batch.shape[0], features.shape[1] * features.shape[2], features.shape[3]))
         print('Shape features after reshape:', features.shape)
-        features = self.fc(features)
-        features = tf.nn.relu(features)
         print('Shape features:', features.shape)
-        print('Inception module start')
+        print('Inception module end')
         return features

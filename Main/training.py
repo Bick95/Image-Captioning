@@ -26,7 +26,7 @@ def loss_function(real, pred):
     return tf.reduce_mean(loss_)
 
 
-@tf.function
+#@tf.function
 def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer, optimizer, train_flag):
     #print('Train step......')
     loss = 0
@@ -34,7 +34,8 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
     # because the captions are not related from image to image
     hidden = decoder.reset_state(batch_size=targets.shape[0])
     dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * targets.shape[0], 1)
-
+    #print('Dec input:', dec_input)
+    #print('Before expansion:', [tokenizer.word_index['<start>']] * targets.shape[0])
     #print('TS - Shape image batch:', img_batch.shape)
     #print('TS - Shape targets:', targets.shape)
 
@@ -49,12 +50,12 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
             #print('TS - Shape context vector:', context_vector.shape)
-            predictions, hidden = decoder(dec_input, context_vector)  # FIXME: prediction of caption not as in paper
+            predictions, hidden = decoder(dec_input, hidden, context_vector)  # FIXME: prediction of caption not as in paper
 
             loss += loss_function(targets[:, i], predictions)
             # Using teacher forcing
             dec_input = tf.expand_dims(targets[:, i], 1)
-            print('Decoder input:\n', dec_input)
+            #print('Decoder input:\n', dec_input)
 
     total_loss = (loss / float(targets.shape[1]))
     #print('Constructing captions done.')

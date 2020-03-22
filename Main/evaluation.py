@@ -39,8 +39,9 @@ def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, token
         for i in range(max_length):
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
-            predictions, hidden = decoder(dec_input, context_vector)
-            predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()
+            predictions, hidden = decoder(dec_input, hidden, context_vector)
+            # predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()  # FIXME: take argmax?
+            predicted_id = tf.math.argmax(predictions, axis=1).numpy()[0]
             test_num_capt.append(predicted_id)
             predicted_id = min(predicted_id, max_words)  # Avoid going out of bounds, which would cause exception
             test_num_capt_clip.append(predicted_id)
@@ -72,9 +73,10 @@ def get_plot_attention(img_path, encoder, attention_module, decoder, max_length,
     for i in range(max_length):
         # Passing the features through the attention module and decoder
         context_vector, attention_weights = attention_module(features, hidden)
-        predictions, hidden = decoder(dec_input, context_vector)
+        predictions, hidden = decoder(dec_input, hidden, context_vector)
         attention_plot[i] = tf.reshape(attention_weights, (-1,)).numpy()
-        predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()
+        #predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()  # FIXME: take argmax?
+        predicted_id = tf.math.argmax(predictions, axis=1).numpy()[0]
         result.append(tokenizer.index_word[predicted_id])
         if tokenizer.index_word[predicted_id] == '<end>':
             return result, attention_plot

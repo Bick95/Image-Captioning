@@ -10,6 +10,10 @@
 csv_file_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/results.csv"
 image_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/flickr30k_images/"
 
+# Peregrine:
+#csv_file_path = "../../flickr30k_images/results.csv"
+#image_path = "../../flickr30k_images/flickr30k_images/"
+
 #Debug should be set to 1 whenever you want to test the flow of the code on your system.
 #Instead of all images, it will just start training for 100 images
 debug = 1
@@ -30,7 +34,7 @@ vocab_size = max_words + 1
 # These two variables represent that vector shape
 features_shape = 2048
 attention_features_shape = 64
-EPOCHS = 6
+EPOCHS = 20
 
 Patience = 10  #Patience of early stopping
 

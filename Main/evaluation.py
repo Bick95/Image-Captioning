@@ -15,6 +15,18 @@ from nltk.translate.bleu_score import sentence_bleu
 import matplotlib.pyplot as plt
 import math
 
+# Unique Naming
+from datetime import datetime
+import random
+import string
+
+
+def random_string(length=10):
+    """
+        Generate a random string of given length
+    """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(length))
 
 def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, tokenizer):
     score = 0
@@ -40,11 +52,10 @@ def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, token
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
             predictions, hidden = decoder(dec_input, hidden, context_vector)
-            # predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()  # FIXME: take argmax?
             predicted_id = tf.math.argmax(predictions, axis=1).numpy()[0]
             test_num_capt.append(predicted_id)
-            predicted_id = min(predicted_id, max_words)  # Avoid going out of bounds, which would cause exception
-            test_num_capt_clip.append(predicted_id)
+            #predicted_id = min(predicted_id, max_words)  # Avoid going out of bounds, which would cause exception
+            #test_num_capt_clip.append(predicted_id)
             result.append(tokenizer.index_word[predicted_id])
             if tokenizer.index_word[predicted_id] == '<end>':
                 score = score + sentence_bleu(real_caption, result, weights=(0, 0.5, 0.5, 0))
@@ -52,7 +63,7 @@ def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, token
             dec_input = tf.expand_dims([predicted_id], 0)
         print('Result:', result)
         print('Predicted w/o clipping:', test_num_capt)
-        print('Predicted wth clipping:', test_num_capt_clip)
+        #print('Predicted wth clipping:', test_num_capt_clip)
     score = score + sentence_bleu(real_caption, result, weights=(0, 0.5, 0.5, 0))
     return score / len(list(test_ds_meta))
 
@@ -98,4 +109,6 @@ def plot_attention(image, result, attention_plot, count):
         img = ax.imshow(temp_image)
         ax.imshow(temp_att, cmap='gray', alpha=0.6, extent=img.get_extent())
     # plt.tight_layout()
-    plt.savefig("test" + str(count) + ".png")
+    now = datetime.now()
+    TIME_STAMP = now.strftime("_%Y_%d_%m__%H_%M_%S__%f_")
+    plt.savefig("test" + str(count) + TIME_STAMP + random_string() + "_" + ".png")

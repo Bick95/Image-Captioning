@@ -18,6 +18,14 @@ def get_loss_object():
 
 
 def loss_function(real, pred):
+    """
+        Computes average loss over batch. For each batch element, only non-padded mis-predicted words count.
+
+        :param real: Ints, indicating for each batch element correct word index for next word in caption.
+        :param pred: For each batch element, probability distribution over entire vocab, indicating prob of each word to
+                     be appended to caption next (as predicted).
+        :return: Average loss over batch.
+    """
     loss_object = get_loss_object()
     mask = tf.math.logical_not(tf.math.equal(real, 0))
     loss_ = loss_object(real, pred)
@@ -112,17 +120,17 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
 
     # Start the training
     for epoch in range(start_epoch, EPOCHS):
-        print('EPOCH:', epoch)
+        #print('EPOCH:', epoch)
         start = time.time()
         total_loss_train = 0
         total_loss_val = 0
 
         # TRAINING LOOP
-        print('##### TRAINING #####')
+        #print('##### TRAINING #####')
         #for img_paths, targets in train_ds_meta.__iter__():
         for (batch, (img_paths, targets)) in enumerate(train_ds_meta):
-            print('Epoch:', epoch, 'Batch:', batch)
-            print(img_paths)
+            #print('Epoch:', epoch, 'Batch:', batch)
+            #print(img_paths)
             # Read in images from paths
             img_batch = load_image_batch(img_paths)
             #print('t - Shape image batch:', img_batch.shape)
@@ -131,25 +139,25 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
             batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                             optimizer, 1)  # 1 - weights trainable
             total_loss_train += t_loss
-        print('##### END TRAINING #####')
+        #print('##### END TRAINING #####')
         loss_plot_val.append(total_loss_train / num_steps_train)
         print('Epoch {} Loss {:.6f}'.format(epoch + 1,
                                             total_loss_train / num_steps_train))
         print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
 
-        print('##### VALIDATION #####')
+        #print('##### VALIDATION #####')
         # VALIDATION LOOP
         for (batch, (img_paths, targets)) in enumerate(valid_ds_meta):
-            print('Batch:', batch)
+            #print('Batch:', batch)
             img_batch = load_image_batch(img_paths)
-            print('Shape image batch:', img_batch.shape)
-            print('Shape targets:', targets.shape)
+            #print('Shape image batch:', img_batch.shape)
+            #print('Shape targets:', targets.shape)
             batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                             optimizer, 0)  # 0 - weights not trainable
             total_loss_val += t_loss
 
         val_loss = total_loss_val / num_steps_val
-        print('##### END VALIDATION #####')
+        #print('##### END VALIDATION #####')
         loss_plot_val.append(val_loss)
         print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1,
                                                          val_loss))

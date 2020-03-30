@@ -23,7 +23,7 @@ import string
 
 def random_string(length=10):
     """
-        Generate a random string of given length
+        Generate a random string of given length. For safely storing produced images.
     """
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(length))
@@ -52,7 +52,9 @@ def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, token
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
             predictions, hidden = decoder(dec_input, hidden, context_vector)
+            #print('Predictions:', predictions)
             predicted_id = tf.math.argmax(predictions, axis=1).numpy()[0]
+            #print('Predicted id:', predicted_id)
             test_num_capt.append(predicted_id)
             #predicted_id = min(predicted_id, max_words)  # Avoid going out of bounds, which would cause exception
             #test_num_capt_clip.append(predicted_id)
@@ -61,6 +63,7 @@ def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, token
                 score = score + sentence_bleu(real_caption, result, weights=(0, 0.5, 0.5, 0))
                 break
             dec_input = tf.expand_dims([predicted_id], 0)
+            #print('Dec input:', dec_input)
         print('Result:', result)
         print('Predicted w/o clipping:', test_num_capt)
         #print('Predicted wth clipping:', test_num_capt_clip)
@@ -86,7 +89,6 @@ def get_plot_attention(img_path, encoder, attention_module, decoder, max_length,
         context_vector, attention_weights = attention_module(features, hidden)
         predictions, hidden = decoder(dec_input, hidden, context_vector)
         attention_plot[i] = tf.reshape(attention_weights, (-1,)).numpy()
-        #predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()  # FIXME: take argmax?
         predicted_id = tf.math.argmax(predictions, axis=1).numpy()[0]
         result.append(tokenizer.index_word[predicted_id])
         if tokenizer.index_word[predicted_id] == '<end>':

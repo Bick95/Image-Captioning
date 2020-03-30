@@ -7,12 +7,12 @@
 #image_path = "../data/flickr30k_images/flickr30k_images/"
 
 # Daniel's:
-csv_file_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/results.csv"
-image_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/flickr30k_images/"
+#csv_file_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/results.csv"
+#image_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/flickr30k_images/"
 
 # Peregrine:
-#csv_file_path = "../../flickr30k_images/results.csv"
-#image_path = "../../flickr30k_images/flickr30k_images/"
+csv_file_path = "../../flickr30k_images/results.csv"
+image_path = "../../flickr30k_images/flickr30k_images/"
 
 #Debug should be set to 1 whenever you want to test the flow of the code on your system.
 #Instead of all images, it will just start training for 100 images
@@ -34,8 +34,8 @@ vocab_size = max_words + 1
 # These two variables represent that vector shape
 features_shape = 2048
 attention_features_shape = 64
-EPOCHS = 20
+EPOCHS = 150
 
-Patience = 10  #Patience of early stopping
+Patience = 100  #Patience of early stopping
 
 plot_attention_idx_list = [1, 10, 100]

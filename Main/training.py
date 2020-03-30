@@ -9,12 +9,20 @@ import time
 
 
 def get_optimizer():
-    return tf.keras.optimizers.Adam()
+    return tf.keras.optimizers.Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False,
+                                    name='Adam')
 
 
 def get_loss_object():
+    """
+        Info: https://www.tensorflow.org/api_docs/python/tf/keras/losses/SparseCategoricalCrossentropy :
+              "By default, we assume that y_pred encodes a probability distribution." -- from_logits=False
+        :return:  Loss function
+    """
     return tf.keras.losses.SparseCategoricalCrossentropy(
-        from_logits=True, reduction='none')
+        from_logits=False, reduction=losses_utils.ReductionV2.AUTO,
+        name='sparse_categorical_crossentropy'
+    )
 
 
 def loss_function(real, pred):

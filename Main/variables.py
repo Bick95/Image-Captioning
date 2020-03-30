@@ -25,6 +25,7 @@ else:
     max_words = 5000
 
 #TRAINING VARIABLES
+learning_rate = 0.01
 BATCH_SIZE = 8  #Debug mode - Batch size - 8, else - 64
 BUFFER_SIZE = 1000
 embedding_dim = 256

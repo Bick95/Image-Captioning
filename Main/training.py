@@ -19,10 +19,7 @@ def get_loss_object():
               "By default, we assume that y_pred encodes a probability distribution." -- from_logits=False
         :return:  Loss function
     """
-    return tf.keras.losses.SparseCategoricalCrossentropy(
-        from_logits=False, reduction=losses_utils.ReductionV2.AUTO,
-        name='sparse_categorical_crossentropy'
-    )
+    return tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
 
 
 def loss_function(real, pred):

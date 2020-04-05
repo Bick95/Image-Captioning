@@ -4,27 +4,13 @@ import os, sys
 sys.path.append(os.path.dirname(os.getcwd()))
 import tensorflow as tf
 from utils.utils import load_image_batch, load_image
-from variables import *
+from variables import BATCH_SIZE, EPOCHS, loss_function_choice, Patience, learning_rate
 import time
 
 
 def get_optimizer():
     return tf.keras.optimizers.Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False,
                                     name='Adam')
-
-
-def log2(x):
-    # Nor sure yet whether needed
-    numerator = tf.math.log(x)
-    denominator = tf.math.log(tf.constant(2, dtype=numerator.dtype))
-    return numerator / denominator
-
-
-def log10(x):
-    # Nor sure yet whether needed
-    numerator = tf.math.log(x)
-    denominator = tf.math.log(tf.constant(10, dtype=numerator.dtype))
-    return numerator / denominator
 
 
 def neg_log_likelihood(real_idx, pred_prob_dist):
@@ -35,31 +21,38 @@ def neg_log_likelihood(real_idx, pred_prob_dist):
                                selecting each of the available words in the vocab next
         :return: tensor of negative log-likelihood per batch element
     """
-    print('###############################################')
-    print('Real:\t\t', real_idx)
-    print('pred max:\t', tf.math.reduce_max(pred_prob_dist, axis=1))
-    print('pred mean:\t', tf.math.reduce_mean(pred_prob_dist, axis=1))
-    print('pred min:\t', tf.math.reduce_min(pred_prob_dist, axis=1))
-    print('pred:', pred_prob_dist)
+    #print('###############################################')
+    #print('Real:\t\t', real_idx)
+    #print('pred max:\t', tf.math.reduce_max(pred_prob_dist, axis=1))
+    #print('pred mean:\t', tf.math.reduce_mean(pred_prob_dist, axis=1))
+    #print('pred min:\t', tf.math.reduce_min(pred_prob_dist, axis=1))
+    #print('pred:', pred_prob_dist)
     # Construct list of enumerated indices to retrieve predicted probs of correct classes/words
     batch_idx = [[i, x] for i, x in enumerate(real_idx)]
     # Extract probabilities for correct words
     likelihood = tf.gather_nd(pred_prob_dist, batch_idx)
     # Compute & return negative log-likelihood
     nll = -tf.math.log(likelihood)
-    print('NLL:\t\t', nll)
-    print('###############################################')
+    #print('NLL:\t\t', nll)
+    #print('###############################################')
     return nll
 
 
 def get_loss_object():
-    #"""
-    #    Info: https://www.tensorflow.org/api_docs/python/tf/keras/losses/SparseCategoricalCrossentropy :
-    #          "By default, we assume that y_pred encodes a probability distribution." -- from_logits=False
-    #    :return:  Loss function
-    #"""
-    return tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none')
-    #return neg_log_likelihood
+    """
+        :return:  Loss function
+    """
+    if loss_function_choice == 0:
+        #    Info: https://www.tensorflow.org/api_docs/python/tf/keras/losses/SparseCategoricalCrossentropy :
+        #          "By default, we assume that y_pred encodes a probability distribution." -- from_logits=False
+        #          reduction='none': Don't reduce from batch size to scalar average, but keep batch-elements separate
+        return tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none')
+
+    elif loss_function_choice == 1:
+        return neg_log_likelihood
+
+    else:
+        raise NotImplementedError
 
 
 def loss_function(real, pred):
@@ -74,11 +67,11 @@ def loss_function(real, pred):
     loss_object = get_loss_object()
     mask = tf.math.logical_not(tf.math.equal(real, 0))
     loss_ = loss_object(real, pred)
-    print('LOSS UNMASKED:', loss_)
+    #print('LOSS UNMASKED:', loss_)
     mask = tf.cast(mask, dtype=loss_.dtype)
-    print('MASK:', mask)
+    #print('MASK:', mask)
     loss_ *= mask
-    print('LOSS MASKED:', loss_)
+    #print('LOSS MASKED:', loss_)
     return tf.reduce_mean(loss_)
 
 
@@ -98,7 +91,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
     # Prediction step
     with tf.GradientTape() as tape:
         features = encoder(img_batch)
-        print('Features:', features)
+        #print('Features:', features)
         #print('TS - Shape features:', features.shape)
         # Repeat, appending caption by one word at a time
         #print('TS - Shape targets:', targets.shape)
@@ -109,10 +102,10 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
 
             #print('TS - Shape context vector:', context_vector.shape)
             predictions, hidden = decoder(dec_input, hidden, context_vector)
-            print('Predictions:', predictions)
+            #print('Predictions:', predictions)
 
             loss += loss_function(targets[:, i], predictions)
-            print('LOSSSSSSSS::::::::::::::::::', loss)
+            #print('LOSSSSSSSS::::::::::::::::::', loss)
             # Using teacher forcing
             dec_input = tf.expand_dims(targets[:, i], 1)
 
@@ -120,9 +113,9 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             if tf.math.reduce_sum(dec_input, axis=0) == 0:
                 break
 
-            print('Iteration:', i)
-            print('Targets:', targets)
-            print('Decoder input:', dec_input)
+            #print('Iteration:', i)
+            #print('Targets:', targets)
+            #print('Decoder input:', dec_input)
             #print('Decoder input:\n', dec_input)
 
     total_loss = (loss / float(targets.shape[1]))

@@ -46,7 +46,7 @@ def get_loss_object():
         #    Info: https://www.tensorflow.org/api_docs/python/tf/keras/losses/SparseCategoricalCrossentropy :
         #          "By default, we assume that y_pred encodes a probability distribution." -- from_logits=False
         #          reduction='none': Don't reduce from batch size to scalar average, but keep batch-elements separate
-        return tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none')
+        return tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False, reduction='none')
 
     elif loss_function_choice == 1:
         return neg_log_likelihood
@@ -106,11 +106,19 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
 
             loss += loss_function(targets[:, i], predictions)
             #print('LOSSSSSSSS::::::::::::::::::', loss)
-            # Using teacher forcing
-            dec_input = tf.expand_dims(targets[:, i], 1)
 
-            # Save unecessary forward-passes if all captions are done
-            if tf.math.reduce_sum(dec_input, axis=0) == 0:
+            if train_flag:
+                # Using teacher forcing during training
+                dec_input = tf.expand_dims(targets[:, i], 1)
+                #print('train-flag:', train_flag, 'dec_input:', dec_input)
+            else:
+                # Use predictions of previous word produced by network per batch element during eval
+                dec_input = tf.expand_dims(tf.math.argmax(predictions, axis=1), 1)
+                #print('#################')
+                #print('predictions:', dec_input)
+
+            # Save unnecessary forward-passes if all captions are done
+            if tf.math.reduce_sum(targets[:, i], axis=0) == 0:
                 break
 
             #print('Iteration:', i)

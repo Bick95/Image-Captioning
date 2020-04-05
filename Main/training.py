@@ -13,13 +13,53 @@ def get_optimizer():
                                     name='Adam')
 
 
+def log2(x):
+    # Nor sure yet whether needed
+    numerator = tf.math.log(x)
+    denominator = tf.math.log(tf.constant(2, dtype=numerator.dtype))
+    return numerator / denominator
+
+
+def log10(x):
+    # Nor sure yet whether needed
+    numerator = tf.math.log(x)
+    denominator = tf.math.log(tf.constant(10, dtype=numerator.dtype))
+    return numerator / denominator
+
+
+def neg_log_likelihood(real_idx, pred_prob_dist):
+    """
+        Computed the respective negative log-likelihood for each batch element.
+        :param real_idx: tensor of correct word token indices to be predicted per batch element
+        :param pred_prob_dist: For each batch element probability distribution over entire vocab giving probability for
+                               selecting each of the available words in the vocab next
+        :return: tensor of negative log-likelihood per batch element
+    """
+    print('###############################################')
+    print('Real:\t\t', real_idx)
+    print('pred max:\t', tf.math.reduce_max(pred_prob_dist, axis=1))
+    print('pred mean:\t', tf.math.reduce_mean(pred_prob_dist, axis=1))
+    print('pred min:\t', tf.math.reduce_min(pred_prob_dist, axis=1))
+    print('pred:', pred_prob_dist)
+    # Construct list of enumerated indices to retrieve predicted probs of correct classes/words
+    batch_idx = [[i, x] for i, x in enumerate(real_idx)]
+    # Extract probabilities for correct words
+    likelihood = tf.gather_nd(pred_prob_dist, batch_idx)
+    # Compute & return negative log-likelihood
+    nll = -tf.math.log(likelihood)
+    print('NLL:\t\t', nll)
+    print('###############################################')
+    return nll
+
+
 def get_loss_object():
-    """
-        Info: https://www.tensorflow.org/api_docs/python/tf/keras/losses/SparseCategoricalCrossentropy :
-              "By default, we assume that y_pred encodes a probability distribution." -- from_logits=False
-        :return:  Loss function
-    """
-    return tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+    #"""
+    #    Info: https://www.tensorflow.org/api_docs/python/tf/keras/losses/SparseCategoricalCrossentropy :
+    #          "By default, we assume that y_pred encodes a probability distribution." -- from_logits=False
+    #    :return:  Loss function
+    #"""
+    #return tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+    return neg_log_likelihood
 
 
 def loss_function(real, pred):
@@ -34,8 +74,11 @@ def loss_function(real, pred):
     loss_object = get_loss_object()
     mask = tf.math.logical_not(tf.math.equal(real, 0))
     loss_ = loss_object(real, pred)
+    print('LOSS UNMASKED:', loss_)
     mask = tf.cast(mask, dtype=loss_.dtype)
+    print('MASK:', mask)
     loss_ *= mask
+    print('LOSS MASKED:', loss_)
     return tf.reduce_mean(loss_)
 
 
@@ -55,6 +98,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
     # Prediction step
     with tf.GradientTape() as tape:
         features = encoder(img_batch)
+        print('Features:', features)
         #print('TS - Shape features:', features.shape)
         # Repeat, appending caption by one word at a time
         #print('TS - Shape targets:', targets.shape)
@@ -62,20 +106,31 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
         for i in range(1, targets.shape[1]):
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
+
             #print('TS - Shape context vector:', context_vector.shape)
-            predictions, hidden = decoder(dec_input, hidden, context_vector)  # FIXME: prediction of caption not as in paper
+            predictions, hidden = decoder(dec_input, hidden, context_vector)
+            print('Predictions:', predictions)
 
             loss += loss_function(targets[:, i], predictions)
+            print('LOSSSSSSSS::::::::::::::::::', loss)
             # Using teacher forcing
             dec_input = tf.expand_dims(targets[:, i], 1)
+
+            # Save unecessary forward-passes if all captions are done
+            if tf.math.reduce_sum(dec_input, axis=0) == 0:
+                break
+
+            print('Iteration:', i)
+            print('Targets:', targets)
+            print('Decoder input:', dec_input)
             #print('Decoder input:\n', dec_input)
 
     total_loss = (loss / float(targets.shape[1]))
     #print('Constructing captions done.')
     # Update step
     if train_flag:
-        trainable_variables = encoder.trainable_variables + decoder.trainable_variables + \
-                              attention_module.trainable_variables
+        trainable_variables = encoder.trainable_variables + attention_module.trainable_variables + \
+                              decoder.trainable_variables
         gradients = tape.gradient(loss, trainable_variables)
         optimizer.apply_gradients(zip(gradients, trainable_variables))
 

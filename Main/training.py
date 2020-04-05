@@ -58,8 +58,8 @@ def get_loss_object():
     #          "By default, we assume that y_pred encodes a probability distribution." -- from_logits=False
     #    :return:  Loss function
     #"""
-    #return tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
-    return neg_log_likelihood
+    return tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none')
+    #return neg_log_likelihood
 
 
 def loss_function(real, pred):

@@ -174,7 +174,6 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
                                             total_loss_train / num_steps_train))
         print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
 
-        #print('##### VALIDATION #####')
         # VALIDATION LOOP
         for (batch, (img_paths, targets)) in enumerate(valid_ds_meta):
             img_batch = load_image_batch(img_paths)

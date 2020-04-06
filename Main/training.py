@@ -21,20 +21,12 @@ def neg_log_likelihood(real_idx, pred_prob_dist):
                                selecting each of the available words in the vocab next
         :return: tensor of negative log-likelihood per batch element
     """
-    #print('###############################################')
-    #print('Real:\t\t', real_idx)
-    #print('pred max:\t', tf.math.reduce_max(pred_prob_dist, axis=1))
-    #print('pred mean:\t', tf.math.reduce_mean(pred_prob_dist, axis=1))
-    #print('pred min:\t', tf.math.reduce_min(pred_prob_dist, axis=1))
-    #print('pred:', pred_prob_dist)
-    # Construct list of enumerated indices to retrieve predicted probs of correct classes/words
-    batch_idx = [[i, x] for i, x in enumerate(real_idx)]
-    # Extract probabilities for correct words
+    # Construct list of enumerated grount-truth indices to retrieve predicted probs of correct classes/words
+    batch_idx = [[tf.constant(i), x] for i, x in enumerate(real_idx)]
+    # Extract probabilities for correct words (per batch-element)
     likelihood = tf.gather_nd(pred_prob_dist, batch_idx)
-    # Compute & return negative log-likelihood
-    nll = -tf.math.log(likelihood)
-    #print('NLL:\t\t', nll)
-    #print('###############################################')
+    # Compute & return negative log10-likelihood per batch element
+    nll = -tf.math.log(likelihood) / tf.math.log(tf.constant(10, dtype=likelihood.dtype))
     return nll
 
 
@@ -52,7 +44,7 @@ def get_loss_object():
         return neg_log_likelihood
 
     else:
-        raise NotImplementedError
+        raise NotImplementedError('Requested Loss function not available.')
 
 
 def loss_function(real, pred):
@@ -67,85 +59,67 @@ def loss_function(real, pred):
     loss_object = get_loss_object()
     mask = tf.math.logical_not(tf.math.equal(real, 0))
     loss_ = loss_object(real, pred)
-    #print('LOSS UNMASKED:', loss_)
     mask = tf.cast(mask, dtype=loss_.dtype)
-    #print('MASK:', mask)
     loss_ *= mask
-    #print('LOSS MASKED:', loss_)
-    return tf.reduce_mean(loss_)
+
+    predictions = tf.math.argmax(pred, axis=1)
+    print('Predictions:\t', predictions)
+    print('Real:\t\t', real)
+    print('LOSS MASKED:', loss_)
+    mean_loss = tf.reduce_mean(loss_)
+    print('Mean loss:', mean_loss)
+
+    return mean_loss
 
 
 #@tf.function
 def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer, optimizer, train_flag):
-    #print('Train step......')
     loss = 0
     # Initializing the hidden state for each batch
     # because the captions are not related from image to image
     hidden = decoder.reset_state(batch_size=targets.shape[0])
     dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * targets.shape[0], 1)
-    #print('Dec input:', dec_input)
-    #print('Before expansion:', [tokenizer.word_index['<start>']] * targets.shape[0])
-    #print('TS - Shape image batch:', img_batch.shape)
-    #print('TS - Shape targets:', targets.shape)
 
     # Prediction step
     with tf.GradientTape() as tape:
         features = encoder(img_batch)
-        #print('Features:', features)
-        #print('TS - Shape features:', features.shape)
         # Repeat, appending caption by one word at a time
-        #print('TS - Shape targets:', targets.shape)
-        #print('Going to construct captions...')
         for i in range(1, targets.shape[1]):
+            print('Iteration:', i)
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
 
-            #print('TS - Shape context vector:', context_vector.shape)
             predictions, hidden = decoder(dec_input, hidden, context_vector)
-            #print('Predictions:', predictions)
 
             loss += loss_function(targets[:, i], predictions)
-            #print('LOSSSSSSSS::::::::::::::::::', loss)
 
             if train_flag:
                 # Using teacher forcing during training
                 dec_input = tf.expand_dims(targets[:, i], 1)
-                #print('train-flag:', train_flag, 'dec_input:', dec_input)
             else:
                 # Use predictions of previous word produced by network per batch element during eval
                 dec_input = tf.expand_dims(tf.math.argmax(predictions, axis=1), 1)
-                #print('#################')
-                #print('predictions:', dec_input)
 
             # Save unnecessary forward-passes if all captions are done
             if tf.math.reduce_sum(targets[:, i], axis=0) == 0:
                 break
 
-            #print('Iteration:', i)
-            #print('Targets:', targets)
-            #print('Decoder input:', dec_input)
-            #print('Decoder input:\n', dec_input)
+    total_loss = loss  # loss == average loss over minibatch     #outtake: (loss / float(targets.shape[1]))
 
-    total_loss = (loss / float(targets.shape[1]))
-    #print('Constructing captions done.')
     # Update step
     if train_flag:
         trainable_variables = encoder.trainable_variables + attention_module.trainable_variables + \
                               decoder.trainable_variables
         gradients = tape.gradient(loss, trainable_variables)
         optimizer.apply_gradients(zip(gradients, trainable_variables))
+    else:
+        # Clear gradients if not needed (during eval)
+        tape.reset()
 
     return loss, total_loss
 
 
 def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder):
-
-    #print('Shape train-ds:', train_ds_meta)
-    #print('Shape valid-ds:', valid_ds_meta)
-    #print('Valid dataset:')
-    #for element in valid_ds_meta:
-    #    print(element)
-    #print('End valid dataset.')
 
     num_train_examples = len(list(train_ds_meta))
     num_steps_train = num_train_examples // BATCH_SIZE
@@ -181,26 +155,20 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
 
     # Start the training
     for epoch in range(start_epoch, EPOCHS):
-        #print('EPOCH:', epoch)
+        print('##### ##### #####\n', '##### EPOCH: #####\n', epoch, '\n##### ##### #####')
         start = time.time()
         total_loss_train = 0
         total_loss_val = 0
 
         # TRAINING LOOP
-        #print('##### TRAINING #####')
-        #for img_paths, targets in train_ds_meta.__iter__():
         for (batch, (img_paths, targets)) in enumerate(train_ds_meta):
-            #print('Epoch:', epoch, 'Batch:', batch)
-            #print(img_paths)
+            print('##### Epoch: #####', epoch, 'Batch:', batch)
             # Read in images from paths
             img_batch = load_image_batch(img_paths)
-            #print('t - Shape image batch:', img_batch.shape)
-            #print('t - Shape targets:', targets.shape)
             # Perform training on one image
             batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
-                                            optimizer, 1)  # 1 - weights trainable
+                                            optimizer, 1)  # 1 - weights trainable & teacher forcing
             total_loss_train += t_loss
-        #print('##### END TRAINING #####')
         loss_plot_val.append(total_loss_train / num_steps_train)
         print('Epoch {} Loss {:.6f}'.format(epoch + 1,
                                             total_loss_train / num_steps_train))
@@ -209,19 +177,15 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         #print('##### VALIDATION #####')
         # VALIDATION LOOP
         for (batch, (img_paths, targets)) in enumerate(valid_ds_meta):
-            #print('Batch:', batch)
             img_batch = load_image_batch(img_paths)
-            #print('Shape image batch:', img_batch.shape)
-            #print('Shape targets:', targets.shape)
             batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
-                                            optimizer, 0)  # 0 - weights not trainable
+                                            optimizer, 0)  # 0 - weights not trainable & no teacher forcing
             total_loss_val += t_loss
 
         val_loss = total_loss_val / num_steps_val
-        #print('##### END VALIDATION #####')
         loss_plot_val.append(val_loss)
-        print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1,
-                                                         val_loss))
+        print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1, val_loss))
+
         if val_loss < min_validation_loss:
             min_validation_loss = val_loss
             check_patience = 0

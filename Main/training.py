@@ -17,11 +17,11 @@ def neg_log_likelihood(real_idx, pred_prob_dist):
     """
         Computed the respective negative log-likelihood for each batch element.
         :param real_idx: tensor of correct word token indices to be predicted per batch element
-        :param pred_prob_dist: For each batch element probability distribution over entire vocab giving probability for
+        :param pred_prob_dist: For each batch element, probability distribution over entire vocab giving probability for
                                selecting each of the available words in the vocab next
         :return: tensor of negative log-likelihood per batch element
     """
-    # Construct list of enumerated grount-truth indices to retrieve predicted probs of correct classes/words
+    # Construct list of enumerated ground-truth indices to retrieve predicted probs of correct classes/words
     batch_idx = [[tf.constant(i), x] for i, x in enumerate(real_idx)]
     # Extract probabilities for correct words (per batch-element)
     likelihood = tf.gather_nd(pred_prob_dist, batch_idx)
@@ -192,4 +192,5 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
             check_patience = check_patience + 1
         if check_patience > Patience:
             break
+            
     return loss_plot_train, loss_plot_val

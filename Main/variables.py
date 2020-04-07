@@ -25,7 +25,7 @@ else:
     max_words = 5000
 
 # Training Variables
-learning_rate = 0.0001
+learning_rate = 0.001
 BATCH_SIZE = 8  #Debug mode - Batch size - 8, else - 64
 BUFFER_SIZE = 1000
 embedding_dim = 256
@@ -44,4 +44,4 @@ plot_attention_idx_list = [1, 10, 100]
 # Loss function
 SPARSE_CATEGORICAL_CROSS_ENTROPY =  0
 NEGATIVE_LOG_LIKELIHOOD =           1
-loss_function_choice = NEGATIVE_LOG_LIKELIHOOD
+loss_function_choice = SPARSE_CATEGORICAL_CROSS_ENTROPY

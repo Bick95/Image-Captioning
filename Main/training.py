@@ -82,6 +82,9 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
 
     # Prediction step
     with tf.GradientTape() as tape:
+        # Clear gradients in case of remaining ones from eval pass
+        tape.reset()
+
         features = encoder(img_batch)
         # Repeat, appending caption by one word at a time
         for i in range(1, targets.shape[1]):
@@ -99,8 +102,6 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             else:
                 # Use predictions of previous word produced by network per batch element during eval
                 dec_input = tf.expand_dims(tf.math.argmax(predictions, axis=1), 1)
-                # Clear gradients if not needed (during eval)
-                #tape.reset() # TODO: not sure yet whether required
 
             # Save unnecessary forward-passes if all captions are done
             if tf.math.reduce_sum(targets[:, i], axis=0) == 0:

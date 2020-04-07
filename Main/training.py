@@ -99,6 +99,8 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             else:
                 # Use predictions of previous word produced by network per batch element during eval
                 dec_input = tf.expand_dims(tf.math.argmax(predictions, axis=1), 1)
+                # Clear gradients if not needed (during eval)
+                #tape.reset() # TODO: not sure yet whether required
 
             # Save unnecessary forward-passes if all captions are done
             if tf.math.reduce_sum(targets[:, i], axis=0) == 0:
@@ -112,9 +114,6 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
                               decoder.trainable_variables
         gradients = tape.gradient(loss, trainable_variables)
         optimizer.apply_gradients(zip(gradients, trainable_variables))
-    else:
-        # Clear gradients if not needed (during eval)
-        tape.reset()
 
     return loss, total_loss
 

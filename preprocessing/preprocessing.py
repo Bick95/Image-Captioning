@@ -28,26 +28,31 @@ def _tokenize_words(captions, tokenizer):
 def _get_image_caption_list(csv_file_path, images_path, debug):
     caption_list = []
     img_name_list = []
-    cnt = 0
+    last_img = ''
     with open(csv_file_path, 'r') as csvfile:
         data = csv.reader(csvfile, delimiter='|')
         for row in data:
             try:
                 img_name = images_path + row[0]
-                caption = '<start> ' + row[2] + ' <end>'
-                img_name_list.append(img_name)
-                caption_list.append(caption)
+
+                # Only one caption per image
+                if not img_name == last_img:
+                    last_img = img_name
+                    caption = '<start> ' + row[2] + ' <end>'
+                    img_name_list.append(img_name)
+                    caption_list.append(caption)
+
             except IndexError:
                 # Handle erroneous dataset entries
                 print('Skipped: ', row)
 
             if not debug:
                 continue
-            cnt = cnt + 1
-            if cnt == 150:
+            if len(caption_list) == 150:
                 break
     img_name_list = img_name_list[1:]  # 1st row contains column names.
     caption_list = caption_list[1:]  # 1st row contains column names.
+    print('NUMBER CAPTIONS: ', len(caption_list))
 
     return img_name_list, caption_list
 

@@ -28,23 +28,18 @@ def _tokenize_words(captions, tokenizer):
 def _get_image_caption_list(csv_file_path, images_path, debug):
     caption_list = []
     img_name_list = []
-    last_img = ''
+
     with open(csv_file_path, 'r') as csvfile:
         data = csv.reader(csvfile, delimiter='|')
         for row in data:
             try:
                 img_name = images_path + row[0]
-
-                # Only one caption per image
-                if not img_name == last_img:
-                    last_img = img_name
-                    caption = '<start> ' + row[2] + ' <end>'
-                    img_name_list.append(img_name)
-                    caption_list.append(caption)
-
+                caption = '<start> ' + row[2] + ' <end>'
+                img_name_list.append(img_name)
+                caption_list.append(caption)
             except IndexError:
                 # Handle erroneous dataset entries
-                print('Skipped: ', row)
+                print('Skipped training example due to import error:\n', row)
 
             if not debug:
                 continue
@@ -71,9 +66,6 @@ def get_meta_datasets(captions_file_path, images_path, tokenizer, data_split, de
     for i in demo_indices:
         del img_name_list[i]
         del captions_list[i]
-
-    print(plot_attention_caption_list)
-    print(plot_attention_img_list)
 
     # Tokenize words
     cap_list, _, max_capt_len, tokenizer = _tokenize_words(captions_list,
@@ -116,6 +108,6 @@ def get_meta_datasets(captions_file_path, images_path, tokenizer, data_split, de
 
     # Test data set
     test_ds_meta = tf.data.Dataset.from_tensor_slices((img_names_test, caps_test))
-    print(list(test_ds_meta))
+
     return train_ds_meta, valid_ds_meta, test_ds_meta, max_capt_len, plot_attention_img_list, \
            plot_attention_caption_list

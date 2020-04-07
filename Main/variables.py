@@ -16,7 +16,7 @@ image_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/flickr30k_ima
 
 #Debug should be set to 1 whenever you want to test the flow of the code on your system.
 #Instead of all images, it will just start training for 100 images
-debug = 1
+debug = 0
 
 #Number of words to be considered while encoding
 if debug:  # Vocab size rather low in debug mode
@@ -26,8 +26,8 @@ else:
 
 # Training Variables
 learning_rate = 0.001
-BATCH_SIZE = 8  #Debug mode - Batch size - 8, else - 64
-BUFFER_SIZE = 1000
+BATCH_SIZE = 64  # Debug mode - Batch size - 8, else - 64
+BUFFER_SIZE = 128
 embedding_dim = 256
 units = 512
 vocab_size = max_words + 1
@@ -35,7 +35,7 @@ vocab_size = max_words + 1
 # These two variables represent that vector shape
 features_shape = 2048
 attention_features_shape = 64
-EPOCHS = 150
+EPOCHS = 2
 
 Patience = 100  #Patience of early stopping
 

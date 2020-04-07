@@ -65,9 +65,9 @@ def loss_function(real, pred):
     predictions = tf.math.argmax(pred, axis=1)
     print('Predictions:\t', predictions)
     print('Real:\t\t', real)
-    print('LOSS MASKED:', loss_)
+    #print('LOSS MASKED:', loss_)
     mean_loss = tf.reduce_mean(loss_)
-    print('Mean loss:', mean_loss)
+    #('Mean loss:', mean_loss)
 
     return mean_loss
 
@@ -88,7 +88,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
         features = encoder(img_batch)
         # Repeat, appending caption by one word at a time
         for i in range(1, targets.shape[1]):
-            print('Iteration:', i)
+            #print('Iteration:', i)
             # Passing the features through the attention module and decoder
             context_vector, attention_weights = attention_module(features, hidden)
 

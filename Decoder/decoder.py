@@ -33,13 +33,13 @@ class RNNDecoder(tf.keras.Model):
                                         dropout=0.0,                            # Default
                                         recurrent_dropout=0.0,                  # Default
                                         implementation=2,                       # Default
-                                        return_sequences=True,                 # Default
+                                        return_sequences=True,
                                         return_state=True,  # Hidden state
                                         go_backwards=False,                     # Default
                                         stateful=False,                         # Default
                                         unroll=False,                           # Default
                                         time_major=False,                       # Default
-                                        reset_after=False                        # Default
+                                        reset_after=False     
                                         )
 
         self.transform_Lo = tf.keras.layers.Dense(vocab_size)

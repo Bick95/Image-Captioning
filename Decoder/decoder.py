@@ -33,13 +33,13 @@ class RNNDecoder(tf.keras.Model):
                                         dropout=0.0,                            # Default
                                         recurrent_dropout=0.0,                  # Default
                                         implementation=2,                       # Default
-                                        return_sequences=False,                 # Default
+                                        return_sequences=True,                 # Default
                                         return_state=True,  # Hidden state
                                         go_backwards=False,                     # Default
                                         stateful=False,                         # Default
                                         unroll=False,                           # Default
                                         time_major=False,                       # Default
-                                        reset_after=True                        # Default
+                                        reset_after=False                        # Default
                                         )
 
         self.transform_Lo = tf.keras.layers.Dense(vocab_size)
@@ -68,7 +68,8 @@ class RNNDecoder(tf.keras.Model):
 
         x = self.transform_Lo(x)                # size=(batch_size, vocab_length+1)
 
-        x = tf.nn.softmax(x, axis=1)            # size=(batch_size, vocab_length+1)
+        x = tf.nn.softmax(x, axis=0)            # size=(batch_size, vocab_length+1)
+        print('DIM DEC: ', x.shape, 'NEW HIDDEN: ', new_hidden)
         return x, new_hidden
 
     def reset_state(self, batch_size):

@@ -33,13 +33,13 @@ class RNNDecoder(tf.keras.Model):
                                         dropout=0.0,                            # Default
                                         recurrent_dropout=0.0,                  # Default
                                         implementation=2,                       # Default
-                                        return_sequences=True,
+                                        return_sequences=False,
                                         return_state=True,  # Hidden state
                                         go_backwards=False,                     # Default
                                         stateful=False,                         # Default
                                         unroll=False,                           # Default
                                         time_major=False,                       # Default
-                                        reset_after=False     
+                                        reset_after=False
                                         )
 
         self.transform_Lo = tf.keras.layers.Dense(vocab_size)
@@ -59,6 +59,8 @@ class RNNDecoder(tf.keras.Model):
         # Passing the concatenated vector to the GRU
         output, new_hidden = self.gru(x, initial_state=batch_prev_hidden)  # batch_prev_hidden: size=(batch_size, self.units)
 
+        #print('Shape new hidden state: ', new_hidden)
+
         # Compare to Eqn. (7) from 'Show, Attend, and Tell'
         lh = self.embedding_Lh(new_hidden)      # size=(batch_size, embedding_dim)
 
@@ -68,8 +70,10 @@ class RNNDecoder(tf.keras.Model):
 
         x = self.transform_Lo(x)                # size=(batch_size, vocab_length+1)
 
-        x = tf.nn.softmax(x, axis=0)            # size=(batch_size, vocab_length+1)
-        print('DIM DEC: ', x.shape, 'NEW HIDDEN: ', new_hidden)
+        # Print statements to check whether softmax axis is applied correctly.
+        #print('SUM TEST: ', tf.math.reduce_sum(x, axis=1))
+        x = tf.nn.softmax(x, axis=1)            # size=(batch_size, vocab_length+1)
+        #print('SUM TEST: ', tf.math.reduce_sum(x, axis=1))
         return x, new_hidden
 
     def reset_state(self, batch_size):

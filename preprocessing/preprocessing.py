@@ -19,7 +19,7 @@ def _tokenize_words(captions, tokenizer):
     train_seqs = tokenizer.texts_to_sequences(captions)
     tokenizer.word_index['<pad>'] = 0
     tokenizer.index_word[0] = '<pad>'
-    train_seqs = tokenizer.texts_to_sequences(captions)  # Redundant?
+    #train_seqs = tokenizer.texts_to_sequences(captions)  # Redundant?
     cap_vector = tf.keras.preprocessing.sequence.pad_sequences(train_seqs, padding='post')
     max_length = _max_len_tensor(train_seqs)
     return cap_vector, train_seqs, max_length, tokenizer
@@ -70,6 +70,8 @@ def get_meta_datasets(captions_file_path, images_path, tokenizer, data_split, de
     # Tokenize words
     cap_list, _, max_capt_len, tokenizer = _tokenize_words(captions_list,
                                                            tokenizer)  # cap_list = list of paddeded integer sequences representing captions
+
+    # FIXME: BUG??????
 
     # Shuffle captions and image names together
     cap_list, img_name_list = shuffle(cap_list,

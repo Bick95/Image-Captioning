@@ -38,7 +38,7 @@ vocab_size = max_words + 1
 # These two variables represent that vector shape
 features_shape = 2048
 attention_features_shape = 64
-EPOCHS = 50
+EPOCHS = 70
 
 Patience = 100  #Patience of early stopping
 

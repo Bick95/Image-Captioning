@@ -25,6 +25,9 @@ def neg_log_likelihood(real_idx, pred_prob_dist):
     batch_idx = [[tf.constant(i), x] for i, x in enumerate(real_idx)]
     # Extract probabilities for correct words (per batch-element)
     likelihood = tf.gather_nd(pred_prob_dist, batch_idx)
+    likelihood = tf.add(likelihood, tf.constant([0.000000001]*likelihood.shape[0]))  # Avoid infinity loss in case of prob == 0.
+    #print('### Likelihoods:', likelihood)
+    #print('Division by:', tf.math.log(tf.constant(10, dtype=likelihood.dtype)))
     # Compute & return negative log10-likelihood per batch element
     nll = -tf.math.log(likelihood) / tf.math.log(tf.constant(10, dtype=likelihood.dtype))
     return nll
@@ -58,8 +61,11 @@ def loss_function(real, pred):
     """
     loss_object = get_loss_object()
     mask = tf.math.logical_not(tf.math.equal(real, 0))
+    #print('\n\nMask1:', mask)
     loss_ = loss_object(real, pred)
     mask = tf.cast(mask, dtype=loss_.dtype)
+    #print('Mask2:', mask)
+    #print('Unmasked loss:', loss_)
     loss_ *= mask
 
     predictions = tf.math.argmax(pred, axis=1)
@@ -67,7 +73,7 @@ def loss_function(real, pred):
     print('Real:\t\t', real)
     #print('LOSS MASKED:', loss_)
     mean_loss = tf.reduce_mean(loss_)
-    #('Mean loss:', mean_loss)
+    #print('Mean loss:', mean_loss)
 
     return mean_loss
 
@@ -94,7 +100,9 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
 
             predictions, hidden = decoder(dec_input, hidden, context_vector)
 
-            loss += loss_function(targets[:, i], predictions)
+            loss_addition = loss_function(targets[:, i], predictions)
+            loss += loss_addition
+            #print('Loss-addition:', loss_addition, 'Loss after:', loss)
 
             if train_flag:
                 # Using teacher forcing during training
@@ -107,6 +115,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             if tf.math.reduce_sum(targets[:, i], axis=0) == 0:
                 break
 
+    print('Loss:', loss, loss.numpy())
     total_loss = loss  # loss == average loss over minibatch     #outtake: (loss / float(targets.shape[1]))
 
     # Update step

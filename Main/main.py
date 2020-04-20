@@ -45,8 +45,9 @@ def main():
     decoder = RNNDecoder(embedding_dim, units, vocab_size)
     print('Done setting up model.')
 
-    loss_plot_train, loss_plot_val = training(train_ds_meta, valid_ds_meta, tokenizer,
-                                              encoder, attention_module, decoder)
+    loss_plot_train, loss_plot_val, encoder, attention_module, decoder = training(train_ds_meta, valid_ds_meta,
+                                                                                  tokenizer, encoder, attention_module,
+                                                                                  decoder)
     print('Done training.')
 
     bleu_score = evaluate(test_ds_meta, encoder, attention_module, decoder, max_capt_len, tokenizer)

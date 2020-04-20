@@ -26,7 +26,7 @@ def neg_log_likelihood(real_idx, pred_prob_dist):
     # Extract probabilities for correct words (per batch-element)
     likelihood = tf.gather_nd(pred_prob_dist, batch_idx)
     likelihood = tf.add(likelihood, tf.constant([0.000000001]*likelihood.shape[0]))  # Avoid infinity loss in case of prob == 0.
-    #print('### Likelihoods:', likelihood)
+    print('Likelihoods:', likelihood)
     #print('Division by:', tf.math.log(tf.constant(10, dtype=likelihood.dtype)))
     # Compute & return negative log10-likelihood per batch element
     nll = -tf.math.log(likelihood) / tf.math.log(tf.constant(10, dtype=likelihood.dtype))
@@ -202,4 +202,4 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         if check_patience > Patience:
             break
             
-    return loss_plot_train, loss_plot_val
+    return loss_plot_train, loss_plot_val, encoder, attention_module, decoder

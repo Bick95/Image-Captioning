@@ -25,7 +25,7 @@ else:
     max_words = 5000
 
 # Training Variables
-learning_rate = 0.001
+learning_rate = 0.0001
 if debug:
     BATCH_SIZE = 8
 else:

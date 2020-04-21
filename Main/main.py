@@ -48,7 +48,10 @@ def main():
     loss_plot_train, loss_plot_val, encoder, attention_module, decoder = training(train_ds_meta, valid_ds_meta,
                                                                                   tokenizer, encoder, attention_module,
                                                                                   decoder)
+
     print('Done training.')
+    print('Evolution loss on training data:\n', loss_plot_train)
+    print('Evolution loss on validation data:\n', loss_plot_val)
 
     bleu_score = evaluate(test_ds_meta, encoder, attention_module, decoder, max_capt_len, tokenizer)
     print('Done with evaluation.')

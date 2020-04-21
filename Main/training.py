@@ -178,7 +178,7 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
             batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                             optimizer, 1)  # 1 - weights trainable & teacher forcing
             total_loss_train += t_loss
-        loss_plot_val.append(total_loss_train / num_steps_train)
+        loss_plot_train.append(total_loss_train / num_steps_train)
         print('Epoch {} Loss {:.6f}'.format(epoch + 1,
                                             total_loss_train / num_steps_train))
         print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))

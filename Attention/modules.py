@@ -49,55 +49,75 @@ class SoftAttention(tf.keras.Model):
         # print("Context Vector after reduce sum",context_vector.shape)
         return context_vector, attention_weights
 
+
 class HardAttention(tf.keras.Model):
-    
+
     # TODO 1: Define custom loss function?
     # TODO 2: Include running average b_k
     # TODO 3: Add entropy H[s]
-    
+
     def __init__(self, units):
         """
             units:      number of internal units per layer
         """
         super(HardAttention, self).__init__()
-        
+
         self.feature_weights = tf.keras.layers.Dense(units)
         self.hidden_weights = tf.keras.layers.Dense(units)
-        self.attention_weights = tf.keras.layers.Dense(1)
+        self.scoring_weights = tf.keras.layers.Dense(1)
+        self.b = 1.
+
+    def loss(self, prob_seq_per_loc, attent_prob_per_loc):
+        """
+            :param prob_seq_per_loc: For each word in a caption, for each batch element, the likelihood of the caption
+                                    so far given attention location and features is passed, i.e. for each word in
+                                    caption the batch output of the decoder
+                                    shape = (embedding-length caption, batch_size, feature-length)
+            :param attent_prob_per_loc: For each word in caption, the batch output of the HardAttention model is passed.
+                                    shape = (embedding-length caption, batch_size, feature-length)
+            :return: loss
+        """
+        for batch_idx in range(prob_seq_per_loc):
+            pass
 
     def call(self, features, hidden):
         """
-            features:   features observed from image, output of encoder,   shape: (batch_size, num_features, embedding_dim) 
+            features:   features observed from image, output of encoder,   shape: (batch_size, num_features, embedding_dim)
             hidden:     hidden state of the decoder network (RNN) from previous iteration, shape: (batch_size, hidden_size)
         """
 
         # hidden_expanded, shape: (batch_size, 1, hidden_size)
         hidden_expanded = tf.expand_dims(hidden, 1)
 
-        # Calculate unnormalized Attention weights;
-        # unnormal_attent_weights, shape: (batch_size, num_features, hidden_size)
-        unnormal_attent_weights = tf.nn.tanh(self.feature_weights(features) + self.hidden_weights(hidden_expanded))
-        
-        # Normalize Attention weights to turn them into a probability-distribution;
-        # attention_weights_alpha, shape: (batch_size, num_features, 1)
-        attention_weights_alpha = tf.nn.softmax(self.attention_weights(unnormal_attent_weights), axis=1)
-        
-        # Select index of feature to attend, i.e. Attention location
-        # attention_location_s, shape = scalar = ();
-        if tf.squeeze(tf.argmax(tensorflow_probability.distributions.Multinomial(total_count=1., probs=[0.5,0.5]))) == 0:
-            # With 50% chance, set the sampled Attention location s to its expected value alpha
-            attention_location_s = tf.squeeze(tf.argmax(attention_weights_alpha, axis=-1))
-            
-        else:
-            # Select feature based on stochastic sampling from Multinoulli (categorical) distribution with probabilities attention_weights_alpha
-            one_hot_selection = tensorflow_probability.distributions.Multinomial(total_count=1., probs=attention_weights_alpha)
-            attention_location_s = tf.squeeze(tf.argmax(one_hot_selection, axis=-1))
-        
-        
-        # Construct context vector by selecting stochastically chosen feature to pay Attention to;
-        # context_vector_z, shape after selection of feature: (batch_size, embedding_dim)
-        context_vector_z = features[attention_location_s,:]
+        # Calculate unnormalized Attention weights (=unnormal_attent_scores); shape: (batch_size, num_features, hidden_size)
+        unnormal_attent_scores = tf.nn.tanh(self.feature_weights(features) + self.hidden_weights(hidden_expanded))
 
-        return context_vector_z, attention_weights_alpha
-    
+        # Normalize Attention weights to turn them into a probability-distribution (attention_probs_alpha); shape: (batch_size, num_features, 1)
+        attention_probs_alpha = tf.nn.softmax(self.scoring_weights(unnormal_attent_scores), axis=1)
+
+        # Select index of feature to attend, i.e. Attention location, and construct batch-context-vector
+        context_vector_z = tf.zeros(shape=[1, features.shape[1], features.shape[2], features.shape[3]],
+                                    dtype=tf.dtypes.float32)
+
+        # 50% of the times act greedy, taking most probable location
+        batch_greedy = tf.random.uniform(shape=[features.shape[0]], minval=0, maxval=2, dtype=tf.int32).numpy()
+
+        # For each batch item in batch, act either greedy or stochastic
+        for idx, act_greedy in enumerate(batch_greedy):
+
+            # attention_location_s, shape = scalar
+            if act_greedy:
+                # With 50% chance, set the sampled Attention location s to its expected value alpha
+                attention_location_s = tf.squeeze(tf.argmax(attention_probs_alpha[idx, :], axis=-1))
+            else:
+                # Select feature based on stochastic sampling from Multinoulli (categorical) distribution with probabilities attention_probs_alpha
+                one_hot_selection = tensorflow_probability.distributions.Multinomial(total_count=1.,
+                                                                                     probs=attention_probs_alpha)
+                attention_location_s = tf.squeeze(tf.argmax(one_hot_selection[idx, :], axis=-1))
+
+            # Construct context vector by selecting stochastically chosen feature to pay Attention to;
+            # context_vector_z, shape after selection of feature: (batch_size, embedding_dim)
+            context_vector_z = tf.concat([context_vector_z, features[idx, attention_location_s, :]], axis=0)
+
+        return context_vector_z[1:], attention_probs_alpha  # Remove empty first element
 

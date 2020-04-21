@@ -27,9 +27,9 @@ else:
 # Training Variables
 learning_rate = 0.001
 if debug:
-    BATCH_SIZE = 8
+    BATCH_SIZE = 16
 else:
-    BATCH_SIZE = 32  # Debug mode - Batch size - 8, else - 32
+    BATCH_SIZE = 32  # Debug mode - Batch size - 16, else - 32
 BUFFER_SIZE = 128
 embedding_dim = 256
 units = 512
@@ -39,7 +39,7 @@ captions_per_image = 2
 # These two variables represent that vector shape
 features_shape = 2048
 attention_features_shape = 64
-EPOCHS = 12
+EPOCHS = 500
 
 Patience = EPOCHS  #Patience of early stopping
 

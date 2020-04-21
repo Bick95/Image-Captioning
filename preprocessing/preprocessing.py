@@ -38,7 +38,7 @@ def _get_image_caption_list(csv_file_path, images_path, debug):
         for row in data:
             try:
                 img_name = images_path + row[0]
-                caption = '<start> ' + row[2] + ' <end>'
+                caption = '<start> ' + row[2].lower() + ' <end>'
 
                 # Restrict number of captions per image
                 if last_added_img != img_name:

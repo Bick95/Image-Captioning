@@ -145,7 +145,6 @@ def get_meta_datasets(captions_file_path, images_path, tokenizer, data_split, de
                                                                            data_split['train'], unique_images, True)
 
     # Split into validation, and testing
-    test_val_percentage = (1. - data_split['train'])
     test_percentage = round(data_split['test'] / (1. - data_split['train']), 2)
 
     # Split into (train) and (test and eval) data, respectively

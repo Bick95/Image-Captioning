@@ -8,10 +8,11 @@ import tensorflow as tf
 from variables import csv_file_path, image_path, debug, max_words, embedding_dim, units, vocab_size, \
     plot_attention_idx_list
 from training import training
-from evaluation import evaluate, get_plot_attention, plot_attention
+from evaluation import evaluate, get_plot_attention, plot_attention, random_string
 from Attention.modules import *
 from Decoder.decoder import *
 from Encoder.encoder import *
+from datetime import datetime
 
 
 def main():
@@ -63,6 +64,18 @@ def main():
         result, attention_plot = get_plot_attention(img_path, encoder, attention_module, decoder, max_capt_len, tokenizer)
         plot_attention(img_path, result, attention_plot, count)
         count = count + 1
+
+    # Save model(s)
+    print('Going to save models.')
+    # Construct identifier
+    TIME_STAMP = datetime.now().strftime("_%Y_%d_%m__%H_%M_%S__%f_")
+    model_id = TIME_STAMP + '_' + random_string()
+
+    # Save
+    encoder.save_weights(model_id + '_encoder_weights')
+    attention_module.save_weights(model_id + '_attention_module')
+    decoder.save_weights(model_id + '_decoder')
+
     print('Done.')
 
 

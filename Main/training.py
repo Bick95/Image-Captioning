@@ -80,7 +80,7 @@ def loss_function(real, pred):
 
 #@tf.function
 def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer, optimizer, train_flag):
-    loss = 0
+    batch_loss = 0
     # Initializing the hidden state for each batch
     # because the captions are not related from image to image
     hidden = decoder.reset_state(batch_size=targets.shape[0])
@@ -101,7 +101,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             predictions, hidden = decoder(dec_input, hidden, context_vector)
 
             loss_addition = loss_function(targets[:, i], predictions)
-            loss += loss_addition
+            batch_loss += loss_addition
             #print('Loss-addition:', loss_addition, 'Loss after:', loss)
 
             if train_flag:
@@ -115,17 +115,17 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             if tf.math.reduce_sum(targets[:, i], axis=0) == 0:
                 break
 
-    print('Batch Loss:', loss.numpy())
-    total_loss = loss  # loss == average loss over minibatch     #outtake: (loss / float(targets.shape[1]))
+    print('Batch Loss:', batch_loss.numpy())
+    avg_loss = batch_loss / float(len(targets))  # loss == average loss over minibatch     #outtake: (loss / float(targets.shape[1]))
 
     # Update step
     if train_flag:
         trainable_variables = encoder.trainable_variables + attention_module.trainable_variables + \
                               decoder.trainable_variables
-        gradients = tape.gradient(loss, trainable_variables)
+        gradients = tape.gradient(batch_loss, trainable_variables)
         optimizer.apply_gradients(zip(gradients, trainable_variables))
 
-    return loss, total_loss
+    return batch_loss, avg_loss
 
 
 def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder, model_folder):
@@ -151,8 +151,8 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         # restoring the latest checkpoint in checkpoint_path
         ckpt.restore(ckpt_manager.latest_checkpoint)
 
-    loss_plot_train = []
-    loss_plot_val = []
+    avg_train_losses = []
+    avg_val_losses = []
     min_validation_loss = 1000
     check_patience = 0
 
@@ -166,8 +166,8 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
     for epoch in range(start_epoch, EPOCHS):
         print('##### ##### #####\n', '##### EPOCH: #####\n', epoch, '\n##### ##### #####')
         start = time.time()
-        total_loss_train = 0
-        total_loss_val = 0
+        epoch_train_loss = 0
+        epoch_val_loss = 0
 
         # TRAINING LOOP
         for (batch, (img_paths, targets)) in enumerate(train_ds_meta):
@@ -175,34 +175,34 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
             # Read in images from paths
             img_batch = load_image_batch(img_paths)
             # Perform training on one image
-            batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
+            batch_loss, avg_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                             optimizer, 1)  # 1 - weights trainable & teacher forcing
-            total_loss_train += t_loss
-        loss_plot_train.append(total_loss_train / num_steps_train)
-        print('Epoch {} Loss {:.6f}'.format(epoch + 1,
-                                            total_loss_train / num_steps_train))
+            epoch_train_loss += avg_loss
+        avg_train_loss = epoch_train_loss / float(num_steps_train)
+        avg_train_losses.append(avg_train_loss)
+        print('Epoch {} Loss {:.6f}'.format(epoch + 1, avg_train_loss))
         print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
 
         # VALIDATION LOOP
         for (batch, (img_paths, targets)) in enumerate(valid_ds_meta):
             img_batch = load_image_batch(img_paths)
-            batch_loss, t_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
-                                            optimizer, 0)  # 0 - weights not trainable & no teacher forcing
-            total_loss_val += t_loss
+            batch_loss, avg_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
+                                              optimizer, 0)  # 0 - weights not trainable & no teacher forcing
+            epoch_val_loss += avg_loss
 
-        val_loss = total_loss_val / num_steps_val
-        loss_plot_val.append(val_loss)
-        print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1, val_loss))
+        avg_val_loss = epoch_val_loss / float(num_steps_val)
+        avg_val_losses.append(avg_val_loss)
+        print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1, avg_val_loss))
 
         if epoch % ckpt_frequency == 0:
             ckpt_manager.save()
 
-        if val_loss < min_validation_loss:
-            min_validation_loss = val_loss
+        if avg_val_loss < min_validation_loss:
+            min_validation_loss = avg_val_loss
             check_patience = 0
         else:
             check_patience = check_patience + 1
         if check_patience > Patience:
             break
 
-    return loss_plot_train, loss_plot_val, encoder, attention_module, decoder
+    return avg_train_losses, avg_val_losses, encoder, attention_module, decoder

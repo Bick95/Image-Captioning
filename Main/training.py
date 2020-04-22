@@ -115,7 +115,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             if tf.math.reduce_sum(targets[:, i], axis=0) == 0:
                 break
 
-    print('Loss:', loss, loss.numpy())
+    print('Batch Loss:', loss.numpy())
     total_loss = loss  # loss == average loss over minibatch     #outtake: (loss / float(targets.shape[1]))
 
     # Update step
@@ -194,6 +194,9 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         loss_plot_val.append(val_loss)
         print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1, val_loss))
 
+        if epoch % 1 == 0:
+            ckpt_manager.save()
+
         if val_loss < min_validation_loss:
             min_validation_loss = val_loss
             check_patience = 0
@@ -201,5 +204,5 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
             check_patience = check_patience + 1
         if check_patience > Patience:
             break
-            
+
     return loss_plot_train, loss_plot_val, encoder, attention_module, decoder

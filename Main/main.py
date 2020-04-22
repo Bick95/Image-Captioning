@@ -16,6 +16,10 @@ from datetime import datetime
 
 
 def main():
+    # Construct testrun identifier
+    TIME_STAMP = datetime.now().strftime("_%Y_%d_%m__%H_%M_%S__%f_")
+    model_id = TIME_STAMP + '_' + random_string()
+
     tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=max_words,
                                                       oov_token="<unk>",
                                                       filters='!"#$%&()*+.,-/:;=?@[\]^_`{|}~ ')
@@ -67,9 +71,6 @@ def main():
 
     # Save model(s)
     print('Going to save models.')
-    # Construct identifier
-    TIME_STAMP = datetime.now().strftime("_%Y_%d_%m__%H_%M_%S__%f_")
-    model_id = TIME_STAMP + '_' + random_string()
 
     # Save
     encoder.save_weights(model_id + '_encoder_weights')

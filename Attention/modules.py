@@ -62,6 +62,8 @@ class HardAttention(tf.keras.Model):
         """
         super(HardAttention, self).__init__()
 
+        print('\nGoing to use HardAttention model!\nMake sure to use train_mode==False where required when predicting!\n')
+
         self.feature_weights = tf.keras.layers.Dense(units)
         self.hidden_weights = tf.keras.layers.Dense(units)
         self.scoring_weights = tf.keras.layers.Dense(1)
@@ -77,10 +79,14 @@ class HardAttention(tf.keras.Model):
                                     shape = (embedding-length caption, batch_size, feature-length)
             :return: loss
         """
+
+        # FIXME: above documentation
+        # TODO: below implementation
+        
         for batch_idx in range(prob_seq_per_loc):
             pass
 
-    def call(self, features, hidden):
+    def call(self, features, hidden, train_mode=True):
         """
             features:   features observed from image, output of encoder,   shape: (batch_size, num_features, embedding_dim)
             hidden:     hidden state of the decoder network (RNN) from previous iteration, shape: (batch_size, hidden_size)
@@ -106,8 +112,8 @@ class HardAttention(tf.keras.Model):
         for idx, act_greedy in enumerate(batch_greedy):
 
             # attention_location_s, shape = scalar
-            if act_greedy:
-                # With 50% chance, set the sampled Attention location s to its expected value alpha
+            if act_greedy or not train_mode:  # FIXME: correct to always choose highest probability during eval?
+                # With 50% chance, set the sampled Attention location s to its expected value alpha - Not during eval!
                 attention_location_s = tf.squeeze(tf.argmax(attention_probs_alpha[idx, :], axis=-1))
             else:
                 # Select feature based on stochastic sampling from Multinoulli (categorical) distribution with probabilities attention_probs_alpha

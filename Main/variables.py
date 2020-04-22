@@ -34,7 +34,7 @@ BUFFER_SIZE = 128
 embedding_dim = 256
 units = 512
 vocab_size = max_words + 1
-captions_per_image = 2
+captions_per_image = 1
 # Shape of the vector extracted from InceptionV3 is (64, 2048)
 # These two variables represent that vector shape
 features_shape = 2048

@@ -4,7 +4,7 @@ import os, sys
 sys.path.append(os.path.dirname(os.getcwd()))
 import tensorflow as tf
 from utils.utils import load_image_batch, load_image
-from variables import BATCH_SIZE, EPOCHS, loss_function_choice, Patience, learning_rate
+from variables import BATCH_SIZE, EPOCHS, loss_function_choice, Patience, learning_rate, ckpt_frequency
 import time
 
 
@@ -128,7 +128,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
     return loss, total_loss
 
 
-def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder):
+def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder, model_folder):
 
     num_train_examples = len(list(train_ds_meta))
     num_steps_train = num_train_examples // BATCH_SIZE
@@ -138,7 +138,7 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
 
     # Get Optimizer and loss Object
     optimizer = get_optimizer()
-    checkpoint_path = "./checkpoints/train"
+    checkpoint_path = model_folder + "checkpoints/train"
     ckpt = tf.train.Checkpoint(encoder=encoder,
                                attention=attention_module,
                                decoder=decoder,
@@ -194,7 +194,7 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         loss_plot_val.append(val_loss)
         print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1, val_loss))
 
-        if epoch % 1 == 0:
+        if epoch % ckpt_frequency == 0:
             ckpt_manager.save()
 
         if val_loss < min_validation_loss:

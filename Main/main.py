@@ -15,10 +15,24 @@ from Encoder.encoder import *
 from datetime import datetime
 
 
-def main():
+def get_folder_id():
+    """
+        Creates folder with unique ID in which everything related to a particular testrun can be saved.
+    :return: Unique folder identifier
+    """
     # Construct testrun identifier
-    TIME_STAMP = datetime.now().strftime("_%Y_%d_%m__%H_%M_%S__%f_")
-    model_id = TIME_STAMP + '_' + random_string()
+    TIME_STAMP = datetime.now().strftime("%Y_%d_%m__%H_%M_%S__%f_")
+    model_folder_id = TIME_STAMP + '_' + random_string() + '/'
+
+    try:
+        os.mkdir(model_folder_id)
+    except Exception as e:
+        print('Exception occurred: ', e)
+
+    return model_folder_id
+
+def main():
+    model_folder_id = get_folder_id()
 
     tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=max_words,
                                                       oov_token="<unk>",
@@ -52,13 +66,13 @@ def main():
 
     loss_plot_train, loss_plot_val, encoder, attention_module, decoder = training(train_ds_meta, valid_ds_meta,
                                                                                   tokenizer, encoder, attention_module,
-                                                                                  decoder)
+                                                                                  decoder, model_folder_id)
 
     print('Done training.')
     print('Evolution loss on training data:\n', loss_plot_train)
     print('Evolution loss on validation data:\n', loss_plot_val)
 
-    bleu_score = evaluate(test_ds_meta, encoder, attention_module, decoder, max_capt_len, tokenizer)
+    bleu_score = evaluate(test_ds_meta, encoder, attention_module, decoder, max_capt_len, tokenizer, model_folder_id)
     print('Done with evaluation.')
 
     print("Bleu score:", bleu_score)
@@ -66,16 +80,16 @@ def main():
     count = 0
     for img_path in plot_attention_img_list:
         result, attention_plot = get_plot_attention(img_path, encoder, attention_module, decoder, max_capt_len, tokenizer)
-        plot_attention(img_path, result, attention_plot, count)
+        plot_attention(img_path, result, attention_plot, count, model_folder_id)
         count = count + 1
 
     # Save model(s)
     print('Going to save models.')
 
     # Save
-    encoder.save_weights(model_id + '_encoder_weights')
-    attention_module.save_weights(model_id + '_attention_module')
-    decoder.save_weights(model_id + '_decoder')
+    encoder.save_weights(model_folder_id + 'final_model/encoder_weights')
+    attention_module.save_weights(model_folder_id + 'final_model/attention_module')
+    decoder.save_weights(model_folder_id + 'final_model/decoder')
 
     print('Done.')
 

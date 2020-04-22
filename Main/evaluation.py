@@ -28,7 +28,7 @@ def random_string(length=10):
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(length))
 
-def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, tokenizer):
+def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, tokenizer, model_folder):
     score = 0
 
     for (idx, (img_path, caption)) in enumerate(test_ds_meta):
@@ -98,7 +98,7 @@ def get_plot_attention(img_path, encoder, attention_module, decoder, max_length,
     return result, attention_plot
 
 
-def plot_attention(image, result, attention_plot, count):
+def plot_attention(image, result, attention_plot, count, model_folder):
     temp_image = np.array(Image.open(image))
     fig = plt.figure(figsize=(40, 40))
     len_result = len(result)
@@ -111,6 +111,4 @@ def plot_attention(image, result, attention_plot, count):
         img = ax.imshow(temp_image)
         ax.imshow(temp_att, cmap='gray', alpha=0.6, extent=img.get_extent())
     # plt.tight_layout()
-    now = datetime.now()
-    TIME_STAMP = now.strftime("_%Y_%d_%m__%H_%M_%S__%f_")
-    plt.savefig("test" + str(count) + TIME_STAMP + random_string() + "_" + ".png")
+    plt.savefig(model_folder + "test" + str(count) + ".png")

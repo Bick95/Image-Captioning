@@ -27,7 +27,6 @@ def neg_log_likelihood(real_idx, pred_prob_dist):
     likelihood = tf.gather_nd(pred_prob_dist, batch_idx)
     likelihood = tf.add(likelihood, tf.constant([0.000000001]*likelihood.shape[0]))  # Avoid infinity loss in case of prob == 0.
     print('Likelihoods:', likelihood)
-    #print('Division by:', tf.math.log(tf.constant(10, dtype=likelihood.dtype)))
     # Compute & return negative log10-likelihood per batch element
     nll = -tf.math.log(likelihood) / tf.math.log(tf.constant(10, dtype=likelihood.dtype))
     return nll
@@ -61,19 +60,14 @@ def loss_function(real, pred):
     """
     loss_object = get_loss_object()
     mask = tf.math.logical_not(tf.math.equal(real, 0))
-    #print('\n\nMask1:', mask)
     loss_ = loss_object(real, pred)
     mask = tf.cast(mask, dtype=loss_.dtype)
-    #print('Mask2:', mask)
-    #print('Unmasked loss:', loss_)
     loss_ *= mask
 
     predictions = tf.math.argmax(pred, axis=1)
     print('Predictions:\t', predictions)
     print('Real:\t\t', real)
-    #print('LOSS MASKED:', loss_)
     mean_loss = tf.reduce_mean(loss_)
-    #print('Mean loss:', mean_loss)
 
     return mean_loss
 
@@ -116,7 +110,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
                 break
 
     print('Batch Loss:', batch_loss.numpy())
-    avg_loss = batch_loss / float(len(targets))  # loss == average loss over minibatch     #outtake: (loss / float(targets.shape[1]))
+    avg_loss = batch_loss.numpy() / float(len(targets))  # loss == average loss over minibatch     #outtake: (loss / float(targets.shape[1]))
 
     # Update step
     if train_flag:
@@ -131,13 +125,12 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
 def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder, model_folder):
 
     num_train_examples = len(list(train_ds_meta))
-    num_steps_train = num_train_examples // BATCH_SIZE
+    num_val_examples   = len(list(valid_ds_meta))
 
-    num_val_examples = len(list(valid_ds_meta))
-    num_steps_val = num_val_examples // BATCH_SIZE
-
-    # Get Optimizer and loss Object
+    # Get Optimizer
     optimizer = get_optimizer()
+
+    # Get automatic checkpoint saver
     checkpoint_path = model_folder + "checkpoints/train"
     ckpt = tf.train.Checkpoint(encoder=encoder,
                                attention=attention_module,
@@ -145,6 +138,7 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
                                optimizer=optimizer)
 
     ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
+
     start_epoch = 0
     if ckpt_manager.latest_checkpoint:
         start_epoch = int(ckpt_manager.latest_checkpoint.split('-')[-1])
@@ -153,13 +147,13 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
 
     avg_train_losses = []
     avg_val_losses = []
-    min_validation_loss = 1000
+    min_validation_loss = float('inf')
     check_patience = 0
 
     # Shuffle data
     train_ds_meta = train_ds_meta.shuffle(buffer_size=num_train_examples,
                                           reshuffle_each_iteration=True).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
-    valid_ds_meta = valid_ds_meta.shuffle(buffer_size=num_train_examples,
+    valid_ds_meta = valid_ds_meta.shuffle(buffer_size=num_val_examples,
                                           reshuffle_each_iteration=False).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
 
     # Start the training
@@ -175,10 +169,12 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
             # Read in images from paths
             img_batch = load_image_batch(img_paths)
             # Perform training on one image
-            batch_loss, avg_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
+            total_batch_loss, avg_batch_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                             optimizer, 1)  # 1 - weights trainable & teacher forcing
-            epoch_train_loss += avg_loss
-        avg_train_loss = epoch_train_loss / float(num_steps_train)
+            epoch_train_loss += avg_batch_loss
+            batch_num = batch
+
+        avg_train_loss = epoch_train_loss / float(batch_num + 1)
         avg_train_losses.append(avg_train_loss)
         print('Epoch {} Loss {:.6f}'.format(epoch + 1, avg_train_loss))
         print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
@@ -186,17 +182,20 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         # VALIDATION LOOP
         for (batch, (img_paths, targets)) in enumerate(valid_ds_meta):
             img_batch = load_image_batch(img_paths)
-            batch_loss, avg_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
+            total_batch_loss, avg_batch_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
                                               optimizer, 0)  # 0 - weights not trainable & no teacher forcing
-            epoch_val_loss += avg_loss
+            epoch_val_loss += avg_batch_loss
+            batch_num = batch
 
-        avg_val_loss = epoch_val_loss / float(num_steps_val)
+        avg_val_loss = epoch_val_loss / float(batch_num + 1)
         avg_val_losses.append(avg_val_loss)
         print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1, avg_val_loss))
 
+        # GENERATE CHECKPOINTS
         if epoch % ckpt_frequency == 0:
             ckpt_manager.save()
 
+        # EARLY STOPPING IMPLEMENTATION
         if avg_val_loss < min_validation_loss:
             min_validation_loss = avg_val_loss
             check_patience = 0

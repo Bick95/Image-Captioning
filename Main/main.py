@@ -1,7 +1,7 @@
 import os, sys
 
 sys.path.append(os.path.dirname(os.getcwd()))
-import csv
+import json
 from utils.utils import *
 from preprocessing.preprocessing import *
 import tensorflow as tf
@@ -31,13 +31,16 @@ def get_folder_id():
 
     return model_folder_id
 
+
 def main():
     model_folder_id = get_folder_id()
 
+    # Init tokenizer
     tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=max_words,
                                                       oov_token="<unk>",
                                                       filters='!"#$%&()*+.,-/:;=?@[\]^_`{|}~ ')
 
+    # Define data-split-ratio
     data_split = dict(train=0.70,
                       valid=0.15,
                       test=0.15)
@@ -64,24 +67,41 @@ def main():
     decoder = RNNDecoder(embedding_dim, units, vocab_size)
     print('Done setting up model.')
 
-    loss_plot_train, loss_plot_val, encoder, attention_module, decoder = training(train_ds_meta, valid_ds_meta,
+    # Train
+    batch_avg_train_losses, batch_avg_train_val_losses, encoder, attention_module, decoder = training(train_ds_meta, valid_ds_meta,
                                                                                   tokenizer, encoder, attention_module,
                                                                                   decoder, model_folder_id)
 
     print('Done training.')
-    print('Evolution loss on training data:\n', loss_plot_train)
-    print('Evolution loss on validation data:\n', loss_plot_val)
+    print('Evolution loss on training data:\n', batch_avg_train_losses)
+    print('Evolution loss on validation data:\n', batch_avg_train_val_losses)
 
+    # Evaluate
     bleu_score = evaluate(test_ds_meta, encoder, attention_module, decoder, max_capt_len, tokenizer, model_folder_id)
     print('Done with evaluation.')
 
     print("Bleu score:", bleu_score)
 
+    # Generate example images
     count = 0
     for img_path in plot_attention_img_list:
         result, attention_plot = get_plot_attention(img_path, encoder, attention_module, decoder, max_capt_len, tokenizer)
         plot_attention(img_path, result, attention_plot, count, model_folder_id)
         count = count + 1
+
+    # Save stats
+    print('Going to save stats.')
+    stats = {'bleu': bleu_score,
+             'batch_avg_train_losses': batch_avg_train_losses,
+             'batch_avg_train_val_losses': batch_avg_train_val_losses,
+             'data_split': data_split,
+             'debug': debug,
+             }
+
+    print(stats)
+
+    with open(model_folder_id + 'stats.txt', 'w') as outfile:
+        json.dump(stats, outfile)
 
     # Save model(s)
     print('Going to save models.')

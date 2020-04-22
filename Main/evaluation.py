@@ -63,12 +63,11 @@ def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, token
                 score = score + sentence_bleu(real_caption, result, weights=(0, 0.5, 0.5, 0))
                 break
             dec_input = tf.expand_dims([predicted_id], 0)
-            #print('Dec input:', dec_input)
-        print('Result:', result)
-        print('Predicted w/o clipping:', test_num_capt)
-        #print('Predicted wth clipping:', test_num_capt_clip)
+
+        print('Result:\t\t', result)
+        print('Predicted:\t', test_num_capt)
     score = score + sentence_bleu(real_caption, result, weights=(0, 0.5, 0.5, 0))
-    return score / len(list(test_ds_meta))
+    return score / float(len(list(test_ds_meta)))
 
 
 # Get the caption and the attention plot for the image

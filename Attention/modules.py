@@ -68,8 +68,21 @@ class HardAttention(tf.keras.Model):
         self.hidden_weights = tf.keras.layers.Dense(units)
         self.scoring_weights = tf.keras.layers.Dense(1)
         self.b = 1.
-        self.lambda_r = self.lambda_h = 0.4
+        self.lambda_r = self.lambda_e = 0.4
         self.caption_len = max_caption_len
+
+    def shannon_entropy(self, batch_probs):
+        """
+            Given a probability per location to attend (per batch element), the Shannon Entropy is computed
+            per batch element. For Shannen Entropy see: https://en.wikipedia.org/wiki/Entropy_(information_theory)
+        :param batch_probs: For each batch element: Probability for each element from feature vector of attending that
+                            feature
+        :return: Shannon entropy per batch element
+        """
+        log_p = tf.math.log(batch_probs)
+        product = tf.math.multiply(batch_probs, log_p)
+        entropy_term = tf.math.reduce_sum(product, axis=1)
+        return -entropy_term
 
     def loss(self, word_label_indices, batch_decoder_output, batch_attention_output):
         """
@@ -97,7 +110,7 @@ class HardAttention(tf.keras.Model):
 
         ## Compute log-likelihood of predicting a feature location (per batch element)
         # For each batch element, select highest probability value (i.e. for selected image location)
-        likelihood = tf.math.reduce_max(batch_decoder_output, axis=1)
+        likelihood = tf.math.reduce_max(batch_attention_output, axis=1)
         likelihood = tf.add(likelihood, tf.constant(
             [0.000000001] * likelihood.shape[0]))  # Avoid infinity loss in case of prob == 0.
         print('Likelihoods locations:', likelihood)
@@ -105,10 +118,10 @@ class HardAttention(tf.keras.Model):
         ll_attention = tf.math.log(likelihood) / tf.math.log(tf.constant(10, dtype=likelihood.dtype))
 
         # All element-wise applications
-        scale = tf.subtract(tf.math.scalar_mul(tf.constant(self.lambda_r), ll_decoder), tf.constant(self.b))
+        scale = tf.math.scalar_mul(tf.constant(self.lambda_r), tf.math.subtract(ll_decoder, tf.constant(self.b)))
         term2 = tf.math.multiply(scale, ll_attention)
 
-        term3 = 0
+        term3 = tf.math.scalar_mul(tf.constant(self.lambda_e), self.shannon_entropy(batch_attention_output))
 
         sum_terms = tf.math.add(tf.math.add(ll_decoder, term2), term3)
 
@@ -117,6 +130,9 @@ class HardAttention(tf.keras.Model):
 
         # Mean over all words in caption: 1/N*sum(x) == sum((1/N).*x)
         mean_loss = tf.math.divide(mean_loss, self.caption_len)
+
+        # Update b
+        # TODO
 
         return mean_loss
 

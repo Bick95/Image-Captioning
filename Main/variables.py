@@ -22,7 +22,7 @@ debug = 1
 if debug:  # Vocab size rather low in debug mode
     max_words = 500  # experimentally tested
 else:
-    max_words = 5000
+    max_words = 2000
 
 # Training Variables
 learning_rate = 0.001
@@ -31,6 +31,7 @@ if debug:
 else:
     BATCH_SIZE = 32  # Debug mode - Batch size - 16, else - 32
 BUFFER_SIZE = 128
+num_captions = 715  # 70% of 715 == approx 500 training images
 embedding_dim = 256
 units = 512
 vocab_size = max_words + 1
@@ -39,10 +40,10 @@ captions_per_image = 1
 # These two variables represent that vector shape
 features_shape = 2048
 attention_features_shape = 64
-EPOCHS = 2
-ckpt_frequency = 1
+EPOCHS = 100
+ckpt_frequency = 50
 
-Patience = EPOCHS  #Patience of early stopping
+Patience = EPOCHS  # Patience of early stopping
 
 plot_attention_idx_list = [1, 10, 100]
 

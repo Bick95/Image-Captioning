@@ -9,7 +9,7 @@ from sklearn.utils import shuffle
 #from sklearn.model_selection import train_test_split
 from variables import captions_per_image
 
-from variables import plot_attention_idx_list
+from variables import plot_attention_idx_list, num_captions
 
 
 def _max_len_tensor(tensor):
@@ -57,9 +57,7 @@ def _get_image_caption_list(csv_file_path, images_path, debug):
                 # Handle erroneous dataset entries
                 print('Skipped training example due to import error:\n', row)
 
-            if not debug:
-                continue
-            if len(caption_list) == 150 + 1:
+            if len(caption_list) == num_captions:
                 break
 
     img_name_list = img_name_list[1:]  # 1st row contains column names.
@@ -137,8 +135,8 @@ def get_meta_datasets(captions_file_path, images_path, tokenizer, data_split, de
     for demo_name in plot_attention_img_list:
         try:
             unique_images.remove(demo_name)
-        except Exception:
-            pass
+        except Exception as e:
+            print('Error during meta dataset creation:', e)
 
     # Split into (train) and (test and eval) data, respectively
     images_train, captions_train, images_t_e, captions_t_e, unique_minors = split_dataset(img_name_list, captions_list,

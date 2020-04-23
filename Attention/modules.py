@@ -56,7 +56,7 @@ class HardAttention(tf.keras.Model):
     # TODO 2: Include running average b_k
     # TODO 3: Add entropy H[s]
 
-    def __init__(self, units):
+    def __init__(self, units, max_caption_len):
         """
             units:      number of internal units per layer
         """
@@ -68,23 +68,58 @@ class HardAttention(tf.keras.Model):
         self.hidden_weights = tf.keras.layers.Dense(units)
         self.scoring_weights = tf.keras.layers.Dense(1)
         self.b = 1.
+        self.lambda_r = self.lambda_h = 0.4
+        self.caption_len = max_caption_len
 
-    def loss(self, prob_seq_per_loc, attent_prob_per_loc):
+    def loss(self, word_label_indices, batch_decoder_output, batch_attention_output):
         """
-            :param prob_seq_per_loc: For each word in a caption, for each batch element, the likelihood of the caption
-                                    so far given attention location and features is passed, i.e. for each word in
-                                    caption the batch output of the decoder
-                                    shape = (embedding-length caption, batch_size, feature-length)
-            :param attent_prob_per_loc: For each word in caption, the batch output of the HardAttention model is passed.
-                                    shape = (embedding-length caption, batch_size, feature-length)
-            :return: loss
+            :param word_label_indices: Indices of ground-truth work tokens to be predicted in current iteration
+            :param batch_decoder_output: Probability of generating most probable word given feature vector and
+                                         location selected by attention module (per batch element).
+                                         == Softmax output of decoder
+            :param batch_attention_output: Probgability of selecting most probable feature location to attend, as
+                                           predicted by attention module (per batch element).
+                                           == Softmax output of attention module
+            :return: Average loss taken over entire batch; Computed for prediction of a single word in the caption
+                     prediction sequence
         """
 
-        # FIXME: above documentation
-        # TODO: below implementation
-        
-        for batch_idx in range(prob_seq_per_loc):
-            pass
+        ## Compute log-likelihood of predicting a word (per batch element)
+        # Construct list of enumerated ground-truth indices to retrieve predicted probs of correct classes/words
+        batch_idx = [[tf.constant(i), x] for i, x in enumerate(word_label_indices)]
+        # Extract probabilities for correct words (per batch-element)
+        likelihood = tf.gather_nd(batch_decoder_output, batch_idx)
+        likelihood = tf.add(likelihood, tf.constant(
+            [0.000000001] * likelihood.shape[0]))  # Avoid infinity loss in case of prob == 0.
+        print('Likelihoods:', likelihood)
+        # Compute log10-likelihood per batch element
+        ll_decoder = tf.math.log(likelihood) / tf.math.log(tf.constant(10, dtype=likelihood.dtype))
+
+        ## Compute log-likelihood of predicting a feature location (per batch element)
+        # For each batch element, select highest probability value (i.e. for selected image location)
+        likelihood = tf.math.reduce_max(batch_decoder_output, axis=1)
+        likelihood = tf.add(likelihood, tf.constant(
+            [0.000000001] * likelihood.shape[0]))  # Avoid infinity loss in case of prob == 0.
+        print('Likelihoods locations:', likelihood)
+        # Compute log10-likelihood per batch element
+        ll_attention = tf.math.log(likelihood) / tf.math.log(tf.constant(10, dtype=likelihood.dtype))
+
+        # All element-wise applications
+        scale = tf.subtract(tf.math.scalar_mul(tf.constant(self.lambda_r), ll_decoder), tf.constant(self.b))
+        term2 = tf.math.multiply(scale, ll_attention)
+
+        term3 = 0
+
+        sum_terms = tf.math.add(tf.math.add(ll_decoder, term2), term3)
+
+        # Mean over batch
+        mean_loss = tf.reduce_mean(sum_terms)
+
+        # Mean over all words in caption: 1/N*sum(x) == sum((1/N).*x)
+        mean_loss = tf.math.divide(mean_loss, self.caption_len)
+
+        return mean_loss
+
 
     def call(self, features, hidden, train_mode=True):
         """

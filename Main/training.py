@@ -75,6 +75,7 @@ def loss_function(real, pred):
 #@tf.function
 def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer, optimizer, train_flag):
     batch_loss = 0
+    batch_acc_prob = 0  # TODO: implement
     # Initializing the hidden state for each batch
     # because the captions are not related from image to image
     hidden = decoder.reset_state(batch_size=targets.shape[0])
@@ -119,7 +120,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
         gradients = tape.gradient(batch_loss, trainable_variables)
         optimizer.apply_gradients(zip(gradients, trainable_variables))
 
-    return batch_loss, avg_loss
+    return batch_loss, avg_loss, batch_acc_prob
 
 
 def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder, model_folder):
@@ -169,10 +170,11 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
             # Read in images from paths
             img_batch = load_image_batch(img_paths)
             # Perform training on one image
-            total_batch_loss, avg_batch_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
-                                            optimizer, 1)  # 1 - weights trainable & teacher forcing
+            total_batch_loss, avg_batch_loss, batch_acc_prob = train_step(img_batch, targets, decoder, attention_module,
+                                                                          encoder, tokenizer, optimizer, 1)  # 1 - weights trainable & teacher forcing
             epoch_train_loss += avg_batch_loss
             batch_num = batch
+            attention_module.update(batch_acc_prob)  # TODO
 
         avg_train_loss = epoch_train_loss / float(batch_num + 1)
         avg_train_losses.append(avg_train_loss)
@@ -182,8 +184,8 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         # VALIDATION LOOP
         for (batch, (img_paths, targets)) in enumerate(valid_ds_meta):
             img_batch = load_image_batch(img_paths)
-            total_batch_loss, avg_batch_loss = train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer,
-                                              optimizer, 0)  # 0 - weights not trainable & no teacher forcing
+            total_batch_loss, avg_batch_loss, _ = train_step(img_batch, targets, decoder, attention_module,
+                                                                          encoder, tokenizer, optimizer, 0)  # 0 - weights not trainable & no teacher forcing
             epoch_val_loss += avg_batch_loss
             batch_num = batch
 

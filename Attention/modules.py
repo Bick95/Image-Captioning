@@ -16,6 +16,9 @@ class SoftAttention(tf.keras.Model):
         self.W2 = tf.keras.layers.Dense(units)
         self.V = tf.keras.layers.Dense(1)
 
+    def update(self, x):
+        pass
+
     def call(self, features, hidden):
         """
             features:   features observed from image
@@ -70,6 +73,10 @@ class HardAttention(tf.keras.Model):
         self.b = 1.
         self.lambda_r = self.lambda_e = 0.4
         self.caption_len = max_caption_len
+
+    def update(self, new_b):
+        # Update b
+        self.b = 0.9 * self.b + 0.1 * new_b
 
     def shannon_entropy(self, batch_probs):
         """
@@ -130,9 +137,6 @@ class HardAttention(tf.keras.Model):
 
         # Mean over all words in caption: 1/N*sum(x) == sum((1/N).*x)
         mean_loss = tf.math.divide(mean_loss, self.caption_len)
-
-        # Update b
-        # TODO
 
         return mean_loss
 

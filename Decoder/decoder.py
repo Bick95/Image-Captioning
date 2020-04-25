@@ -22,11 +22,11 @@ class RNNDecoder(tf.keras.Model):
                                         use_bias=True,                          # Default
                                         kernel_initializer='glorot_uniform',    # Default
                                         recurrent_initializer='glorot_uniform',
-                                        bias_initializer='zeros',               # Default
-                                        kernel_regularizer=tf.keras.regularizers.l2(l=0.01),                # Default
-                                        recurrent_regularizer=tf.keras.regularizers.l2(l=0.1),             # Default
+                                        bias_initializer='glorot_uniform',               # Default
+                                        kernel_regularizer=tf.keras.regularizers.l2(l=0.0001),                # Default
+                                        recurrent_regularizer=tf.keras.regularizers.l2(l=0.0001),             # Default
                                         bias_regularizer=None,                  # Default
-                                        activity_regularizer=tf.keras.regularizers.l2(l=0.01),              # Default
+                                        activity_regularizer=tf.keras.regularizers.l2(l=0.0001),              # Default
                                         kernel_constraint=None,                 # Default
                                         recurrent_constraint=None,              # Default
                                         bias_constraint=None,                   # Default
@@ -43,7 +43,7 @@ class RNNDecoder(tf.keras.Model):
                                         )
 
         self.transform_Lo = tf.keras.layers.Dense(vocab_size, kernel_regularizer=tf.keras.regularizers.l2(0.01))
-        self.embedding_Lh = tf.keras.layers.Dense(embedding_dim, kernel_regularizer=tf.keras.regularizers.l2(0.1))
+        self.embedding_Lh = tf.keras.layers.Dense(embedding_dim, kernel_regularizer=tf.keras.regularizers.l2(0.001))
         self.embedding_Lz = tf.keras.layers.Dense(embedding_dim, kernel_regularizer=tf.keras.regularizers.l2(0.0001))
         self.embedding_E = tf.keras.layers.Dense(embedding_dim, input_shape=[vocab_size])
 

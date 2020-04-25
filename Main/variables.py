@@ -41,7 +41,7 @@ captions_per_image = 1
 # These two variables represent that vector shape
 features_shape = 2048
 attention_features_shape = 64
-EPOCHS = 100
+EPOCHS = 500
 ckpt_frequency = 50
 
 Patience = EPOCHS  # Patience of early stopping

@@ -74,7 +74,7 @@ def loss_function(real, pred):
 
 #@tf.function
 def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer, optimizer, train_flag):
-    batch_loss = 0
+    loss, reg_loss, data_loss = 0., 0., 0.
     batch_acc_prob = 0  # TODO: implement
     # Initializing the hidden state for each batch
     # because the captions are not related from image to image
@@ -95,9 +95,13 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
 
             predictions, hidden = decoder(dec_input, hidden, context_vector)
 
-            loss_addition = loss_function(targets[:, i], predictions)
-            batch_loss += loss_addition
-            #print('Loss-addition:', loss_addition, 'Loss after:', loss)
+            data_loss += loss_function(targets[:, i], predictions)
+
+            reg_loss += (tf.math.reduce_sum(encoder.losses) +
+                         tf.math.reduce_sum(attention_module.losses) +
+                         tf.math.reduce_sum(decoder.losses))
+
+            loss = data_loss + reg_loss  # Must be inside with-scope, otherwise trainable variables will not be found
 
             if train_flag:
                 # Using teacher forcing during training
@@ -110,17 +114,20 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
             if tf.math.reduce_sum(targets[:, i], axis=0) == 0:
                 break
 
-    print('Batch Loss:', batch_loss.numpy())
-    avg_loss = batch_loss.numpy() / float(i)  # loss == average loss over max len of seen minibatcn
+    print('Data loss:', data_loss.numpy())
+    print('Regu loss:', reg_loss.numpy())
+    print('Combined loss:', loss.numpy())
+
+    avg_loss = data_loss.numpy() / float(i)  # loss == average loss over max len of seen minibatcn
 
     # Update step
     if train_flag:
         trainable_variables = encoder.trainable_variables + attention_module.trainable_variables + \
                               decoder.trainable_variables
-        gradients = tape.gradient(batch_loss, trainable_variables)
+        gradients = tape.gradient(loss, trainable_variables)
         optimizer.apply_gradients(zip(gradients, trainable_variables))
 
-    return batch_loss, avg_loss, batch_acc_prob
+    return loss, avg_loss, batch_acc_prob
 
 
 def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder, model_folder):

@@ -25,13 +25,14 @@ else:
     max_words = 2000
 
 # Training Variables
-learning_rate = 0.001
+learning_rate = 0.0001
 if debug:
     BATCH_SIZE = 16
 else:
     BATCH_SIZE = 32  # Debug mode - Batch size - 16, else - 32
 BUFFER_SIZE = 128
-num_captions = 715  # 70% of 715 == approx 500 training images
+#num_captions = 715  # 70% of 715 == approx 500 training images
+num_captions = 150
 embedding_dim = 256
 units = 512
 vocab_size = max_words + 1

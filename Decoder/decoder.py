@@ -23,10 +23,10 @@ class RNNDecoder(tf.keras.Model):
                                         kernel_initializer='glorot_uniform',    # Default
                                         recurrent_initializer='glorot_uniform',
                                         bias_initializer='zeros',               # Default
-                                        kernel_regularizer=None,                # Default
-                                        recurrent_regularizer=None,             # Default
+                                        kernel_regularizer=tf.keras.regularizers.l2(l=0.01),                # Default
+                                        recurrent_regularizer=tf.keras.regularizers.l2(l=0.1),             # Default
                                         bias_regularizer=None,                  # Default
-                                        activity_regularizer=None,              # Default
+                                        activity_regularizer=tf.keras.regularizers.l2(l=0.01),              # Default
                                         kernel_constraint=None,                 # Default
                                         recurrent_constraint=None,              # Default
                                         bias_constraint=None,                   # Default
@@ -42,9 +42,9 @@ class RNNDecoder(tf.keras.Model):
                                         reset_after=False
                                         )
 
-        self.transform_Lo = tf.keras.layers.Dense(vocab_size)
-        self.embedding_Lh = tf.keras.layers.Dense(embedding_dim)
-        self.embedding_Lz = tf.keras.layers.Dense(embedding_dim)
+        self.transform_Lo = tf.keras.layers.Dense(vocab_size, kernel_regularizer=tf.keras.regularizers.l2(0.01))
+        self.embedding_Lh = tf.keras.layers.Dense(embedding_dim, kernel_regularizer=tf.keras.regularizers.l2(0.1))
+        self.embedding_Lz = tf.keras.layers.Dense(embedding_dim, kernel_regularizer=tf.keras.regularizers.l2(0.0001))
         self.embedding_E = tf.keras.layers.Dense(embedding_dim, input_shape=[vocab_size])
 
     def call(self, batch_prev_word, batch_prev_hidden, batch_context_vector):

@@ -111,7 +111,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
                 break
 
     print('Batch Loss:', batch_loss.numpy())
-    avg_loss = batch_loss.numpy() / float(len(targets))  # loss == average loss over minibatch     #outtake: (loss / float(targets.shape[1]))
+    avg_loss = batch_loss.numpy() / float(i)  # loss == average loss over max len of seen minibatcn
 
     # Update step
     if train_flag:

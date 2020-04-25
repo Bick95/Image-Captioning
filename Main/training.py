@@ -118,7 +118,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
     print('Regu loss:', reg_loss.numpy())
     print('Combined loss:', loss.numpy())
 
-    avg_loss = data_loss.numpy() / float(i)  # loss == average loss over max len of seen minibatcn
+    avg_data_loss = data_loss.numpy() / float(i)  # loss == average loss over max len of seen minibatcn
 
     # Update step
     if train_flag:
@@ -127,7 +127,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
         gradients = tape.gradient(loss, trainable_variables)
         optimizer.apply_gradients(zip(gradients, trainable_variables))
 
-    return loss, avg_loss, batch_acc_prob
+    return data_loss, avg_data_loss, reg_loss, loss, batch_acc_prob
 
 
 def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder, model_folder):
@@ -153,8 +153,13 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         # restoring the latest checkpoint in checkpoint_path
         ckpt.restore(ckpt_manager.latest_checkpoint)
 
-    avg_train_losses = []
-    avg_val_losses = []
+    # Extensive documentation of loss development
+    train_total_total_data_loss, train_total_total_avg_data_loss, train_total_total_reg_loss, train_total_total_loss = [], [], [], []
+    train_avg_total_data_loss, train_avg_total_avg_data_loss, train_avg_total_reg_loss, train_avg_total_loss = [], [], [], []
+
+    eval_total_total_data_loss, eval_total_total_avg_data_loss, eval_total_total_reg_loss, eval_total_total_loss = [], [], [], []
+    eval_avg_total_data_loss, eval_avg_total_avg_data_loss, eval_avg_total_reg_loss, eval_avg_total_loss = [], [], [], []
+
     min_validation_loss = float('inf')
     check_patience = 0
 
@@ -168,8 +173,10 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
     for epoch in range(start_epoch, EPOCHS):
         print('##### ##### #####\n', '##### EPOCH: #####\n', epoch, '\n##### ##### #####')
         start = time.time()
-        epoch_train_loss = 0
-        epoch_val_loss = 0
+        total_data_loss = 0.
+        total_avg_data_loss = 0.
+        total_reg_loss = 0.
+        total_loss = 0.
 
         # TRAINING LOOP
         for (batch, (img_paths, targets)) in enumerate(train_ds_meta):
@@ -177,40 +184,79 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
             # Read in images from paths
             img_batch = load_image_batch(img_paths)
             # Perform training on one image
-            total_batch_loss, avg_batch_loss, batch_acc_prob = train_step(img_batch, targets, decoder, attention_module,
-                                                                          encoder, tokenizer, optimizer, 1)  # 1 - weights trainable & teacher forcing
-            epoch_train_loss += avg_batch_loss
-            batch_num = batch
+            data_loss, avg_data_loss, reg_loss, loss, batch_acc_prob = train_step(img_batch, targets, decoder,
+                                                                                  attention_module, encoder, tokenizer,
+                                                                                  optimizer, 1)  # 1 - weights trainable & teacher forcing
+
             attention_module.update(batch_acc_prob)  # TODO
 
-        avg_train_loss = epoch_train_loss / float(batch_num + 1)
-        avg_train_losses.append(avg_train_loss)
-        print('Epoch {} Loss {:.6f}'.format(epoch + 1, avg_train_loss))
+            total_data_loss += data_loss
+            total_avg_data_loss += avg_data_loss
+            total_reg_loss += reg_loss
+            total_loss += loss
+
+        num_batches = float(batch + 1)
+
+        train_total_total_data_loss.append(total_data_loss)
+        train_total_total_avg_data_loss.append(total_avg_data_loss)
+        train_total_total_reg_loss.append(total_reg_loss)
+        train_total_total_loss.append(total_loss)
+
+        train_avg_total_data_loss.append(total_data_loss / num_batches)
+        train_avg_total_avg_data_loss.append(total_avg_data_loss / num_batches)
+        train_avg_total_reg_loss.append(total_reg_loss / num_batches)
+        train_avg_total_loss.append(total_loss / num_batches)
+
+        print('Epoch {} Loss {:.6f}'.format(epoch + 1, total_loss))
         print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
 
         # VALIDATION LOOP
+        total_data_loss = 0.
+        total_avg_data_loss = 0.
+        total_reg_loss = 0.
+        total_loss = 0.
+
         for (batch, (img_paths, targets)) in enumerate(valid_ds_meta):
             img_batch = load_image_batch(img_paths)
-            total_batch_loss, avg_batch_loss, _ = train_step(img_batch, targets, decoder, attention_module,
+            data_loss, avg_data_loss, reg_loss, loss, _ = train_step(img_batch, targets, decoder, attention_module,
                                                                           encoder, tokenizer, optimizer, 0)  # 0 - weights not trainable & no teacher forcing
-            epoch_val_loss += avg_batch_loss
-            batch_num = batch
+            total_data_loss += data_loss
+            total_avg_data_loss += avg_data_loss
+            total_reg_loss += reg_loss
+            total_loss += loss
 
-        avg_val_loss = epoch_val_loss / float(batch_num + 1)
-        avg_val_losses.append(avg_val_loss)
-        print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1, avg_val_loss))
+        num_batches = float(batch + 1)
+
+        eval_total_total_data_loss.append(total_data_loss)
+        eval_total_total_avg_data_loss.append(total_avg_data_loss)
+        eval_total_total_reg_loss.append(total_reg_loss)
+        eval_total_total_loss.append(total_loss)
+
+        eval_avg_total_data_loss.append(total_data_loss / num_batches)
+        eval_avg_total_avg_data_loss.append(total_avg_data_loss / num_batches)
+        eval_avg_total_reg_loss.append(total_reg_loss / num_batches)
+        eval_avg_total_loss.append(total_loss / num_batches)
+        print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1, total_loss))
 
         # GENERATE CHECKPOINTS
         if epoch % ckpt_frequency == 0:
             ckpt_manager.save()
 
         # EARLY STOPPING IMPLEMENTATION
-        if avg_val_loss < min_validation_loss:
-            min_validation_loss = avg_val_loss
+        if (total_loss / num_batches) < min_validation_loss:
+            min_validation_loss = total_loss / num_batches
             check_patience = 0
         else:
             check_patience = check_patience + 1
         if check_patience > Patience:
             break
 
-    return avg_train_losses, avg_val_losses, encoder, attention_module, decoder
+    return train_total_total_data_loss, train_total_total_avg_data_loss, \
+           train_total_total_reg_loss, train_total_total_loss, \
+           train_avg_total_data_loss, train_avg_total_avg_data_loss, \
+           train_avg_total_reg_loss, train_avg_total_loss, \
+           eval_total_total_data_loss, eval_total_total_avg_data_loss, \
+           eval_total_total_reg_loss, eval_total_total_loss, \
+           eval_avg_total_data_loss, eval_avg_total_avg_data_loss, \
+           eval_avg_total_reg_loss, eval_avg_total_loss, \
+           encoder, attention_module, decoder

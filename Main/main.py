@@ -68,9 +68,17 @@ def main():
     print('Done setting up model.')
 
     # Train
-    batch_avg_train_losses, batch_avg_train_val_losses, encoder, attention_module, decoder = training(train_ds_meta, valid_ds_meta,
-                                                                                  tokenizer, encoder, attention_module,
-                                                                                  decoder, model_folder_id)
+    train_total_total_data_loss, train_total_total_avg_data_loss, \
+    train_total_total_reg_loss, train_total_total_loss, \
+    train_avg_total_data_loss, train_avg_total_avg_data_loss, \
+    train_avg_total_reg_loss, train_avg_total_loss, \
+    eval_total_total_data_loss, eval_total_total_avg_data_loss, \
+    eval_total_total_reg_loss, eval_total_total_loss, \
+    eval_avg_total_data_loss, eval_avg_total_avg_data_loss, \
+    eval_avg_total_reg_loss, eval_avg_total_loss, \
+    encoder, attention_module, decoder = training(train_ds_meta, valid_ds_meta,
+                                                  tokenizer, encoder, attention_module,
+                                                  decoder, model_folder_id)
 
     print('Done training.')
     print('Evolution loss on training data:\n', batch_avg_train_losses)
@@ -92,10 +100,24 @@ def main():
     # Save stats
     print('Going to save stats.')
     stats = {'bleu': bleu_score,
-             'batch_avg_train_losses': batch_avg_train_losses,
-             'batch_avg_train_val_losses': batch_avg_train_val_losses,
+             'train_total_total_data_loss': train_total_total_data_loss,
+             'train_total_total_avg_data_loss': train_total_total_avg_data_loss,
+             'train_total_total_avg_data_loss': train_total_total_reg_loss,
+             'train_total_total_loss': train_total_total_loss,
+             'train_avg_total_data_loss': train_avg_total_data_loss,
+             'train_avg_total_avg_data_loss': train_avg_total_avg_data_loss,
+             'train_avg_total_reg_loss': train_avg_total_reg_loss,
+             'train_avg_total_loss': train_avg_total_loss,
+             'eval_total_total_data_loss': eval_total_total_data_loss,
+             'eval_total_total_avg_data_loss': eval_total_total_avg_data_loss,
+             'eval_total_total_reg_loss': eval_total_total_reg_loss,
+             'eval_total_total_loss': eval_total_total_loss,
+             'eval_avg_total_data_loss': eval_avg_total_data_loss,
+             'eval_avg_total_avg_data_loss': eval_avg_total_avg_data_loss,
+             'eval_avg_total_reg_loss': eval_avg_total_reg_loss,
+             'eval_avg_total_loss': eval_avg_total_loss,
              'data_split': data_split,
-             'debug': debug,
+             'debug': debug
              }
 
     print(stats)

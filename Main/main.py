@@ -81,8 +81,8 @@ def main():
                                                   decoder, model_folder_id)
 
     print('Done training.')
-    print('Evolution loss on training data:\n', batch_avg_train_losses)
-    print('Evolution loss on validation data:\n', batch_avg_train_val_losses)
+    print('Evolution loss on training data:\n', train_avg_total_loss)
+    print('Evolution loss on validation data:\n', eval_avg_total_loss)
 
     # Evaluate
     bleu_score = evaluate(test_ds_meta, encoder, attention_module, decoder, max_capt_len, tokenizer, model_folder_id)
@@ -100,22 +100,22 @@ def main():
     # Save stats
     print('Going to save stats.')
     stats = {'bleu': bleu_score,
-             'train_total_total_data_loss': train_total_total_data_loss,
-             'train_total_total_avg_data_loss': train_total_total_avg_data_loss,
-             'train_total_total_avg_data_loss': train_total_total_reg_loss,
-             'train_total_total_loss': train_total_total_loss,
-             'train_avg_total_data_loss': train_avg_total_data_loss,
-             'train_avg_total_avg_data_loss': train_avg_total_avg_data_loss,
-             'train_avg_total_reg_loss': train_avg_total_reg_loss,
-             'train_avg_total_loss': train_avg_total_loss,
-             'eval_total_total_data_loss': eval_total_total_data_loss,
-             'eval_total_total_avg_data_loss': eval_total_total_avg_data_loss,
-             'eval_total_total_reg_loss': eval_total_total_reg_loss,
-             'eval_total_total_loss': eval_total_total_loss,
-             'eval_avg_total_data_loss': eval_avg_total_data_loss,
-             'eval_avg_total_avg_data_loss': eval_avg_total_avg_data_loss,
-             'eval_avg_total_reg_loss': eval_avg_total_reg_loss,
-             'eval_avg_total_loss': eval_avg_total_loss,
+             'train_total_total_data_loss': list(train_total_total_data_loss),
+             'train_total_total_avg_data_loss': list(train_total_total_avg_data_loss),
+             'train_total_total_reg_loss': list(train_total_total_reg_loss),
+             'train_total_total_loss': list(train_total_total_loss),
+             'train_avg_total_data_loss': list(train_avg_total_data_loss),
+             'train_avg_total_avg_data_loss': list(train_avg_total_avg_data_loss),
+             'train_avg_total_reg_loss': list(train_avg_total_reg_loss),
+             'train_avg_total_loss': list(train_avg_total_loss),
+             'eval_total_total_data_loss': list(eval_total_total_data_loss),
+             'eval_total_total_avg_data_loss': list(eval_total_total_avg_data_loss),
+             'eval_total_total_reg_loss': list(eval_total_total_reg_loss),
+             'eval_total_total_loss': list(eval_total_total_loss),
+             'eval_avg_total_data_loss': list(eval_avg_total_data_loss),
+             'eval_avg_total_avg_data_loss': list(eval_avg_total_avg_data_loss),
+             'eval_avg_total_reg_loss': list(eval_avg_total_reg_loss),
+             'eval_avg_total_loss': list(eval_avg_total_loss),
              'data_split': data_split,
              'debug': debug
              }

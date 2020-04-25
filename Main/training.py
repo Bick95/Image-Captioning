@@ -151,7 +151,7 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
     start_epoch = 0
     if ckpt_manager.latest_checkpoint:
         start_epoch = int(ckpt_manager.latest_checkpoint.split('-')[-1])
-        # restoring the latest checkpoint in checkpoint_path
+        # Restoring the latest checkpoint in checkpoint_path if existent
         ckpt.restore(ckpt_manager.latest_checkpoint)
 
     # Extensive documentation of loss development

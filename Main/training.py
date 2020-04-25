@@ -6,6 +6,7 @@ import tensorflow as tf
 from utils.utils import load_image_batch, load_image
 from variables import BATCH_SIZE, EPOCHS, loss_function_choice, Patience, learning_rate, ckpt_frequency
 import time
+import numpy as np
 
 
 def get_optimizer():
@@ -154,11 +155,11 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         ckpt.restore(ckpt_manager.latest_checkpoint)
 
     # Extensive documentation of loss development
-    train_total_total_data_loss, train_total_total_avg_data_loss, train_total_total_reg_loss, train_total_total_loss = [], [], [], []
-    train_avg_total_data_loss, train_avg_total_avg_data_loss, train_avg_total_reg_loss, train_avg_total_loss = [], [], [], []
+    train_total_total_data_loss, train_total_total_avg_data_loss, train_total_total_reg_loss, train_total_total_loss = np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
+    train_avg_total_data_loss, train_avg_total_avg_data_loss, train_avg_total_reg_loss, train_avg_total_loss = np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
 
-    eval_total_total_data_loss, eval_total_total_avg_data_loss, eval_total_total_reg_loss, eval_total_total_loss = [], [], [], []
-    eval_avg_total_data_loss, eval_avg_total_avg_data_loss, eval_avg_total_reg_loss, eval_avg_total_loss = [], [], [], []
+    eval_total_total_data_loss, eval_total_total_avg_data_loss, eval_total_total_reg_loss, eval_total_total_loss = np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
+    eval_avg_total_data_loss, eval_avg_total_avg_data_loss, eval_avg_total_reg_loss, eval_avg_total_loss = np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
 
     min_validation_loss = float('inf')
     check_patience = 0
@@ -197,15 +198,15 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
 
         num_batches = float(batch + 1)
 
-        train_total_total_data_loss.append(total_data_loss)
-        train_total_total_avg_data_loss.append(total_avg_data_loss)
-        train_total_total_reg_loss.append(total_reg_loss)
-        train_total_total_loss.append(total_loss)
+        train_total_total_data_loss[epoch] = total_data_loss
+        train_total_total_avg_data_loss[epoch] = total_avg_data_loss
+        train_total_total_reg_loss[epoch] = total_reg_loss
+        train_total_total_loss[epoch] = total_loss
 
-        train_avg_total_data_loss.append(total_data_loss / num_batches)
-        train_avg_total_avg_data_loss.append(total_avg_data_loss / num_batches)
-        train_avg_total_reg_loss.append(total_reg_loss / num_batches)
-        train_avg_total_loss.append(total_loss / num_batches)
+        train_avg_total_data_loss[epoch] = total_data_loss / num_batches
+        train_avg_total_avg_data_loss[epoch] = total_avg_data_loss / num_batches
+        train_avg_total_reg_loss[epoch] = total_reg_loss / num_batches
+        train_avg_total_loss[epoch] = total_loss / num_batches
 
         print('Epoch {} Loss {:.6f}'.format(epoch + 1, total_loss))
         print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
@@ -227,15 +228,15 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
 
         num_batches = float(batch + 1)
 
-        eval_total_total_data_loss.append(total_data_loss)
-        eval_total_total_avg_data_loss.append(total_avg_data_loss)
-        eval_total_total_reg_loss.append(total_reg_loss)
-        eval_total_total_loss.append(total_loss)
+        eval_total_total_data_loss[epoch] = total_data_loss
+        eval_total_total_avg_data_loss[epoch] = total_avg_data_loss
+        eval_total_total_reg_loss[epoch] = total_reg_loss
+        eval_total_total_loss[epoch] = total_loss
 
-        eval_avg_total_data_loss.append(total_data_loss / num_batches)
-        eval_avg_total_avg_data_loss.append(total_avg_data_loss / num_batches)
-        eval_avg_total_reg_loss.append(total_reg_loss / num_batches)
-        eval_avg_total_loss.append(total_loss / num_batches)
+        eval_avg_total_data_loss[epoch] = total_data_loss / num_batches
+        eval_avg_total_avg_data_loss[epoch] = total_avg_data_loss / num_batches
+        eval_avg_total_reg_loss[epoch] = total_reg_loss / num_batches
+        eval_avg_total_loss[epoch] = total_loss / num_batches
         print('Epoch {} Validation Loss {:.6f}\n'.format(epoch + 1, total_loss))
 
         # GENERATE CHECKPOINTS

@@ -50,6 +50,9 @@ def main():
         plot_attention_img_list, plot_attention_caption_list = get_meta_datasets(csv_file_path, image_path, tokenizer,
                                                                                  data_split, debug)
 
+    print([tokenizer.index_word[i] for i in range(max_words)])
+    print('VOCAB FULL!!!')
+
     # Dataset Exploration
     if debug:
         print('----------------------------------')

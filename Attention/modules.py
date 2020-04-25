@@ -12,9 +12,9 @@ class SoftAttention(tf.keras.Model):
             units:      number of internal units per layer
         """
         super(SoftAttention, self).__init__()
-        self.W1 = tf.keras.layers.Dense(units, kernel_regularizer=tf.keras.regularizers.l2(0.001))
-        self.W2 = tf.keras.layers.Dense(units, kernel_regularizer=tf.keras.regularizers.l2(0.001))
-        self.V = tf.keras.layers.Dense(1, kernel_regularizer=tf.keras.regularizers.l2(0.001))
+        self.W1 = tf.keras.layers.Dense(units, kernel_regularizer=tf.keras.regularizers.l2(0.01))
+        self.W2 = tf.keras.layers.Dense(units, kernel_regularizer=tf.keras.regularizers.l2(0.01))
+        self.V = tf.keras.layers.Dense(1, kernel_regularizer=tf.keras.regularizers.l2(0.01))
 
     def update(self, x):
         pass

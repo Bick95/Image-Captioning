@@ -155,11 +155,15 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
         ckpt.restore(ckpt_manager.latest_checkpoint)
 
     # Extensive documentation of loss development
-    train_total_total_data_loss, train_total_total_avg_data_loss, train_total_total_reg_loss, train_total_total_loss = np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
-    train_avg_total_data_loss, train_avg_total_avg_data_loss, train_avg_total_reg_loss, train_avg_total_loss = np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
+    train_total_total_data_loss, train_total_total_avg_data_loss, train_total_total_reg_loss, train_total_total_loss = \
+        np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
+    train_avg_total_data_loss, train_avg_total_avg_data_loss, train_avg_total_reg_loss, train_avg_total_loss = \
+        np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
 
-    eval_total_total_data_loss, eval_total_total_avg_data_loss, eval_total_total_reg_loss, eval_total_total_loss = np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
-    eval_avg_total_data_loss, eval_avg_total_avg_data_loss, eval_avg_total_reg_loss, eval_avg_total_loss = np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
+    eval_total_total_data_loss, eval_total_total_avg_data_loss, eval_total_total_reg_loss, eval_total_total_loss = \
+        np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
+    eval_avg_total_data_loss, eval_avg_total_avg_data_loss, eval_avg_total_reg_loss, eval_avg_total_loss = \
+        np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS]), np.zeros([EPOCHS])
 
     min_validation_loss = float('inf')
     check_patience = 0
@@ -189,7 +193,7 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
                                                                                   attention_module, encoder, tokenizer,
                                                                                   optimizer, 1)  # 1 - weights trainable & teacher forcing
 
-            attention_module.update(batch_acc_prob)  # TODO
+            attention_module.update(batch_acc_prob)  # TODO:  for hard attention
 
             total_data_loss += data_loss
             total_avg_data_loss += avg_data_loss
@@ -228,6 +232,7 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
 
         num_batches = float(batch + 1)
 
+        # Documentation of evaluation stats
         eval_total_total_data_loss[epoch] = total_data_loss
         eval_total_total_avg_data_loss[epoch] = total_avg_data_loss
         eval_total_total_reg_loss[epoch] = total_reg_loss

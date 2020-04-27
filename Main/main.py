@@ -34,7 +34,8 @@ def get_folder_id():
 
 def main():
     model_folder_id = get_folder_id()
-
+    print('Folder ID: ', model_folder_id)
+    
     # Init tokenizer
     tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=max_words,
                                                       oov_token="<unk>",

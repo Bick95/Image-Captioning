@@ -20,36 +20,23 @@ class SoftAttention(tf.keras.Model):
         pass
 
     def call(self, features, hidden):
-        """
-            features:   features observed from image
-            hidden:     hidden state of the decoder network (RNN) from previous iteration
-        """
-        # print("INSIDE ATTENTION MODULE")
-        # print("Features are in Attention",features.shape)
-        # print("hidden ",hidden.shape)
+        # features(CNN_encoder output) shape == (batch_size, 64, embedding_dim)
+
+        # hidden shape == (batch_size, hidden_size)
+        # hidden_with_time_axis shape == (batch_size, 1, hidden_size)
         hidden_with_time_axis = tf.expand_dims(hidden, 1)
-        # print("Hidden with time axis ", hidden_with_time_axis.shape)
+
         # score shape == (batch_size, 64, hidden_size)
+        score = tf.nn.tanh(self.W1(features) + self.W2(hidden_with_time_axis))
 
-        features_W1 = self.W1(features)
-        # print("Features W1",features_W1.shape)
-        hidden_with_time_axis_W2 = self.W2(hidden_with_time_axis)
-        # print("Hidden with time axis W2",hidden_with_time_axis_W2.shape)
-
-        sum_check = features_W1+hidden_with_time_axis_W2
-        # print("Sum check",sum_check.shape)
-        score= tf.nn.tanh(sum_check)
-        #score = tf.nn.tanh(self.W1(features) + self.W2(hidden_with_time_axis))
-        # print("Score is ",score.shape)
         # attention_weights shape == (batch_size, 64, 1)
         # you get 1 at the last axis because you are applying score to self.V
         attention_weights = tf.nn.softmax(self.V(score), axis=1)
-        # print("Attention weights ",attention_weights.shape)
+
         # context_vector shape after sum == (batch_size, hidden_size)
         context_vector = attention_weights * features
-        # print("Context vector",context_vector.shape)
         context_vector = tf.reduce_sum(context_vector, axis=1)
-        # print("Context Vector after reduce sum",context_vector.shape)
+
         return context_vector, attention_weights
 
 

@@ -23,10 +23,10 @@ class RNNDecoder(tf.keras.Model):
                                         kernel_initializer='glorot_uniform',    # Default
                                         recurrent_initializer='glorot_uniform',
                                         bias_initializer='glorot_uniform',               # Default
-                                        kernel_regularizer=tf.keras.regularizers.l2(l=0.01),                # Default
-                                        recurrent_regularizer=tf.keras.regularizers.l2(l=0.01),             # Default
+                                        kernel_regularizer=None,                # Default vs tf.keras.regularizers.l2(l=0.01)
+                                        recurrent_regularizer=None,             # Default
                                         bias_regularizer=None,                  # Default
-                                        activity_regularizer=tf.keras.regularizers.l2(l=0.01),              # Default
+                                        activity_regularizer=None,              # Default
                                         kernel_constraint=None,                 # Default
                                         recurrent_constraint=None,              # Default
                                         bias_constraint=None,                   # Default
@@ -42,9 +42,9 @@ class RNNDecoder(tf.keras.Model):
                                         reset_after=False
                                         )
 
-        self.transform_Lo = tf.keras.layers.Dense(vocab_size, kernel_regularizer=tf.keras.regularizers.l2(0.2))
-        self.embedding_Lh = tf.keras.layers.Dense(embedding_dim, kernel_regularizer=tf.keras.regularizers.l2(0.01))
-        self.embedding_Lz = tf.keras.layers.Dense(embedding_dim, kernel_regularizer=tf.keras.regularizers.l2(0.01))
+        self.transform_Lo = tf.keras.layers.Dense(vocab_size, kernel_regularizer=None)
+        self.embedding_Lh = tf.keras.layers.Dense(embedding_dim, kernel_regularizer=None)
+        self.embedding_Lz = tf.keras.layers.Dense(embedding_dim, kernel_regularizer=None)
         self.embedding_E = tf.keras.layers.Dense(embedding_dim, input_shape=[vocab_size])
 
     def call(self, batch_prev_word, batch_prev_hidden, batch_context_vector):
@@ -59,8 +59,6 @@ class RNNDecoder(tf.keras.Model):
         # Passing the concatenated vector to the GRU
         output, new_hidden = self.gru(x, initial_state=batch_prev_hidden)  # batch_prev_hidden: size=(batch_size, self.units)
 
-        #print('Shape new hidden state: ', new_hidden)
-
         # Compare to Eqn. (7) from 'Show, Attend, and Tell'
         lh = self.embedding_Lh(new_hidden)      # size=(batch_size, embedding_dim)
 
@@ -70,10 +68,8 @@ class RNNDecoder(tf.keras.Model):
 
         x = self.transform_Lo(x)                # size=(batch_size, vocab_length+1)
 
-        # Print statements to check whether softmax axis is applied correctly.
-        #print('SUM TEST: ', tf.math.reduce_sum(x, axis=1))
+        # Print statements to check whether softmax axis is applied correctly
         x = tf.nn.softmax(x, axis=1)            # size=(batch_size, vocab_length+1)
-        #print('SUM TEST: ', tf.math.reduce_sum(x, axis=1))
         return x, new_hidden
 
     def reset_state(self, batch_size):

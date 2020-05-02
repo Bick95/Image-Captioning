@@ -17,7 +17,7 @@ class RNNDecoder(tf.keras.Model):
         #                               recurrent_initializer='glorot_uniform')
 
         self.gru = tf.keras.layers.GRU( self.units,
-                                        activation='tanh',                      # Default
+                                        activation='tanh',                      # Not Default
                                         recurrent_activation='sigmoid',         # Default
                                         use_bias=True,                          # Default
                                         kernel_initializer='glorot_uniform',    # Default
@@ -47,22 +47,22 @@ class RNNDecoder(tf.keras.Model):
         self.embedding_Lz = tf.keras.layers.Dense(embedding_dim, kernel_regularizer=None)
         self.embedding_E = tf.keras.layers.Dense(embedding_dim, input_shape=[vocab_size])
 
-    def call(self, batch_prev_word, batch_prev_hidden, batch_context_vector):
+    def call(self, prev_word, prev_hidden, context_vector):
 
-        ey = self.embedding_E(batch_prev_word)  # size=(batch_size, embedding_dim)
+        ey = self.embedding_E(prev_word)  # size=(batch_size, embedding_dim)
 
         # Compare to Eqn (1) from 'Show, Attend, and Tell'
-        x = tf.concat([tf.expand_dims(batch_context_vector, 1),
+        x = tf.concat([tf.expand_dims(context_vector, 1),
                        tf.expand_dims(ey, 1)],
                       axis=-1)  # size=(batch_size, 1, (sum of lengths...))
 
         # Passing the concatenated vector to the GRU
-        output, new_hidden = self.gru(x, initial_state=batch_prev_hidden)  # batch_prev_hidden: size=(batch_size, self.units)
+        output, new_hidden = self.gru(x, initial_state=prev_hidden)  # batch_prev_hidden: size=(batch_size, self.units)
 
         # Compare to Eqn. (7) from 'Show, Attend, and Tell'
         lh = self.embedding_Lh(new_hidden)      # size=(batch_size, embedding_dim)
 
-        lz = self.embedding_Lz(batch_context_vector)    # size=(batch_size, embedding_dim)
+        lz = self.embedding_Lz(context_vector)    # size=(batch_size, embedding_dim)
 
         x = ey + lh + lz                        # size=(batch_size, embedding_dim)
 

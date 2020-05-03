@@ -20,28 +20,28 @@ debug = 1
 
 #Number of words to be considered while encoding
 if debug:  # Vocab size rather low in debug mode
-    max_words = 2000  # experimentally tested
+    max_words = 3000  # experimentally tested
 else:
     max_words = 2000
 
 # Training Variables
-learning_rate = 0.001
+learning_rate = 0.0001
 if debug:
-    BATCH_SIZE = 16
+    BATCH_SIZE = 32
 else:
     BATCH_SIZE = 32  # Debug mode - Batch size - 16, else - 32
 BUFFER_SIZE = 128
 #num_captions = 715  # 70% of 715 == approx 500 training images
-num_captions = 5000
+num_captions = 50000
 embedding_dim = 256
 units = 512
 vocab_size = max_words + 1
-captions_per_image = 1
+captions_per_image = 4
 # Shape of the vector extracted from InceptionV3 is (64, 2048)
 # These two variables represent that vector shape
 features_shape = 2048
 attention_features_shape = 64
-EPOCHS = 4
+EPOCHS = 2
 ckpt_frequency = 50
 
 Patience = EPOCHS  # Patience of early stopping

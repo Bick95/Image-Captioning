@@ -160,7 +160,7 @@ class HardAttention(tf.keras.Model):
         # attention_weights shape == (batch_size, 64, 1)
         # you get 1 at the last axis because you are applying score to self.V
         attention_weights = tf.nn.softmax(self.V(score), axis=1)
-        attention_weights_sqzd = tf.squeeze(attention_weights)
+        attention_weights_sqzd = tf.squeeze(attention_weights, axis=2)
 
         # context_vector shape after sum == (batch_size, hidden_size)
         context_vector = []

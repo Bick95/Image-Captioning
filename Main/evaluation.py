@@ -50,7 +50,10 @@ def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, token
         result = []
         for i in range(max_length):
             # Passing the features through the attention module and decoder
-            context_vector, attention_weights = attention_module(features, hidden)
+            if attention_mode == SOFT_ATTENTION:
+                context_vector, attention_weights = attention_module(features, hidden)
+            else:  # HardAttention mode
+                context_vector, attention_weights, _ = attention_module(features, hidden)
             predictions, hidden = decoder(dec_input, hidden, context_vector)
             #print('Predictions:', predictions)
             predicted_id = tf.math.argmax(predictions, axis=1).numpy()[0]
@@ -85,7 +88,10 @@ def get_plot_attention(img_path, encoder, attention_module, decoder, max_length,
     result = []
     for i in range(max_length):
         # Passing the features through the attention module and decoder
-        context_vector, attention_weights = attention_module(features, hidden)
+        if attention_mode == SOFT_ATTENTION:
+            context_vector, attention_weights = attention_module(features, hidden)
+        else:  # HardAttention mode
+            context_vector, attention_weights, _ = attention_module(features, hidden)
         predictions, hidden = decoder(dec_input, hidden, context_vector)
         attention_plot[i] = tf.reshape(attention_weights, (-1,)).numpy()
         predicted_id = tf.math.argmax(predictions, axis=1).numpy()[0]

@@ -53,6 +53,6 @@ SPARSE_CATEGORICAL_CROSS_ENTROPY =  0
 NEGATIVE_LOG_LIKELIHOOD =           1
 loss_function_choice = NEGATIVE_LOG_LIKELIHOOD
 
-attention_mode = 1
+attention_mode = 0
 SOFT_ATTENTION = 0
 HARD_ATTENTION = 1

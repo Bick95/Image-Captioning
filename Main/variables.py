@@ -52,3 +52,7 @@ plot_attention_idx_list = [1, 10, 100]
 SPARSE_CATEGORICAL_CROSS_ENTROPY =  0
 NEGATIVE_LOG_LIKELIHOOD =           1
 loss_function_choice = NEGATIVE_LOG_LIKELIHOOD
+
+attention_mode = 1
+SOFT_ATTENTION = 0
+HARD_ATTENTION = 1

@@ -4,6 +4,7 @@ sys.path.append(os.path.dirname(os.getcwd()))
 
 # Imports
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 
 class SoftAttention(tf.keras.Model):
@@ -42,11 +43,7 @@ class SoftAttention(tf.keras.Model):
 
 class HardAttention(tf.keras.Model):
 
-    # TODO 1: Define custom loss function?
-    # TODO 2: Include running average b_k
-    # TODO 3: Add entropy H[s]
-
-    def __init__(self, units, max_caption_len):
+    def __init__(self, units):
         """
             units:      number of internal units per layer
         """
@@ -54,16 +51,37 @@ class HardAttention(tf.keras.Model):
 
         print('\nGoing to use HardAttention model!\nMake sure to use train_mode==False where required when predicting!\n')
 
-        self.feature_weights = tf.keras.layers.Dense(units)
-        self.hidden_weights = tf.keras.layers.Dense(units)
-        self.scoring_weights = tf.keras.layers.Dense(1)
-        self.b = 1.
-        self.lambda_r = self.lambda_e = 0.4
-        self.caption_len = max_caption_len
+        self.W1 = tf.keras.layers.Dense(units, kernel_regularizer=None)
+        self.W2 = tf.keras.layers.Dense(units, kernel_regularizer=None)
+        self.V = tf.keras.layers.Dense(1, kernel_regularizer=None)  # vs: tf.keras.regularizers.l2(0.01)
+        self.b = 0.
+        self.lambda_r = self.lambda_e = 0.5
 
-    def update(self, new_b):
+    def update(self, evol_gt_likelihoods, caption_len):
+        """
+        :param evol_gt_likelihoods: List of batches of batch likelihood tensors, where each
+                                    batch likelihood tensor contains likelihood of correct class/word per batch element.
+                                    One batch element for each predicted word during generation of a full caption.
+        :param caption_len: Length of longest caption in mini-batch for which this update of b is to be calculates.
+        :return: Updated running average b.
+        """
+
+        batch_size = evol_gt_likelihoods[0].shape[0]
+
+        acc_likelihoods = tf.zeros(batch_size)
+
+        for batch in evol_gt_likelihoods:
+            acc_likelihoods += batch
+
+        # Per batch element, average prob over caption
+        avg_likelihoods = acc_likelihoods / caption_len
+
+        # Mean over batch
+        mean_likelihood = tf.reduce_mean(avg_likelihoods)
+
         # Update b
-        self.b = 0.9 * self.b + 0.1 * new_b
+        self.b = 0.9 * self.b + 0.1 * tf.math.log(mean_likelihood)
+        print('New b:', self.b)
 
     def shannon_entropy(self, batch_probs):
         """
@@ -76,56 +94,47 @@ class HardAttention(tf.keras.Model):
         log_p = tf.math.log(batch_probs)
         product = tf.math.multiply(batch_probs, log_p)
         entropy_term = tf.math.reduce_sum(product, axis=1)
+        print('Entropy:', -entropy_term)
         return -entropy_term
 
-    def loss(self, word_label_indices, batch_decoder_output, batch_attention_output):
+    def loss(self, target_idx, decoder_output, attention_weights, attention_location):
         """
-            :param word_label_indices: Indices of ground-truth work tokens to be predicted in current iteration
-            :param batch_decoder_output: Probability of generating most probable word given feature vector and
-                                         location selected by attention module (per batch element).
-                                         == Softmax output of decoder
-            :param batch_attention_output: Probgability of selecting most probable feature location to attend, as
-                                           predicted by attention module (per batch element).
-                                           == Softmax output of attention module
-            :return: Average loss taken over entire batch; Computed for prediction of a single word in the caption
-                     prediction sequence
+            Computes the loss per mini-batch.
+        :param target_idx: For each word in mini-batch, the ground-truth class-label/word-index
+        :param decoder_output: For each mini-batch-element, the probability distribution over vocab
+        :param attention_weights: For each mini-batch element, the probability distribution over attention locations
+                                  when predicting the current word
+        :param attention_location: For each batch element, the location to focus on as selected by the attention module
+        :return: Average mini-batch loss during prediction of one of the (single) words in caption
         """
 
-        ## Compute log-likelihood of predicting a word (per batch element)
-        # Construct list of enumerated ground-truth indices to retrieve predicted probs of correct classes/words
-        batch_idx = [[tf.constant(i), x] for i, x in enumerate(word_label_indices)]
-        # Extract probabilities for correct words (per batch-element)
-        likelihood = tf.gather_nd(batch_decoder_output, batch_idx)
-        likelihood = tf.add(likelihood, tf.constant(
-            [0.000000001] * likelihood.shape[0]))  # Avoid infinity loss in case of prob == 0.
-        print('Likelihoods:', likelihood)
-        # Compute log10-likelihood per batch element
-        ll_decoder = tf.math.log(likelihood) / tf.math.log(tf.constant(10, dtype=likelihood.dtype))
+        # Make sure to avoid log(0)
+        decoder_output += 0.000000001
+        attention_weights += 0.000000001
 
-        ## Compute log-likelihood of predicting a feature location (per batch element)
-        # For each batch element, select highest probability value (i.e. for selected image location)
-        likelihood = tf.math.reduce_max(batch_attention_output, axis=1)
-        likelihood = tf.add(likelihood, tf.constant(
-            [0.000000001] * likelihood.shape[0]))  # Avoid infinity loss in case of prob == 0.
-        print('Likelihoods locations:', likelihood)
-        # Compute log10-likelihood per batch element
-        ll_attention = tf.math.log(likelihood) / tf.math.log(tf.constant(10, dtype=likelihood.dtype))
+        # Collect probabilities for all batch elements of correct class/word
+        gt_likelihood = tf.convert_to_tensor([decoder_output[i, x] for i, x in enumerate(target_idx)])
 
-        # All element-wise applications
-        scale = tf.math.scalar_mul(tf.constant(self.lambda_r), tf.math.subtract(ll_decoder, tf.constant(self.b)))
-        term2 = tf.math.multiply(scale, ll_attention)
+        # Compute log-likelihood of correct class
+        log_likelihood = tf.math.log(gt_likelihood)
 
-        term3 = tf.math.scalar_mul(tf.constant(self.lambda_e), self.shannon_entropy(batch_attention_output))
+        # Collect probabilities for all selected attention locations of batch
+        att_likelihood = tf.convert_to_tensor([attention_weights[i, x] for i, x in enumerate(attention_location)])
+        log_att_likelihood = tf.math.log(att_likelihood)
 
-        sum_terms = tf.math.add(tf.math.add(ll_decoder, term2), term3)
+        # Compute Shannon Entropy term
+        entropy = self.shannon_entropy(attention_weights)
 
-        # Mean over batch
-        mean_loss = tf.reduce_mean(sum_terms)
+        # Putting it all together
+        loss = log_likelihood + self.lambda_r * (log_likelihood - self.b) * log_att_likelihood + self.lambda_e * entropy
 
-        # Mean over all words in caption: 1/N*sum(x) == sum((1/N).*x)
-        mean_loss = tf.math.divide(mean_loss, self.caption_len)
+        # Compute mean over batch
+        mean_loss = tf.reduce_mean(loss)
 
-        return mean_loss
+        # Take into account averaging of loss over caption length (=N)
+        #mean_loss /= self.caption_len  # Done in train_step()
+
+        return mean_loss, gt_likelihood
 
 
     def call(self, features, hidden, train_mode=True):
@@ -134,38 +143,41 @@ class HardAttention(tf.keras.Model):
             hidden:     hidden state of the decoder network (RNN) from previous iteration, shape: (batch_size, hidden_size)
         """
 
-        # hidden_expanded, shape: (batch_size, 1, hidden_size)
-        hidden_expanded = tf.expand_dims(hidden, 1)
+        batch_size = features.shape[0]
 
-        # Calculate unnormalized Attention weights (=unnormal_attent_scores); shape: (batch_size, num_features, hidden_size)
-        unnormal_attent_scores = tf.nn.tanh(self.feature_weights(features) + self.hidden_weights(hidden_expanded))
+        # features(CNN_encoder output) shape == (batch_size, 64, embedding_dim)
 
-        # Normalize Attention weights to turn them into a probability-distribution (attention_probs_alpha); shape: (batch_size, num_features, 1)
-        attention_probs_alpha = tf.nn.softmax(self.scoring_weights(unnormal_attent_scores), axis=1)
+        # hidden shape == (batch_size, hidden_size)
+        # hidden_with_time_axis shape == (batch_size, 1, hidden_size)
+        hidden_with_time_axis = tf.expand_dims(hidden, 1)
 
-        # Select index of feature to attend, i.e. Attention location, and construct batch-context-vector
-        context_vector_z = tf.zeros(shape=[1, features.shape[1], features.shape[2], features.shape[3]],
-                                    dtype=tf.dtypes.float32)
+        # score shape == (batch_size, 64, hidden_size)
+        score = tf.nn.tanh(self.W1(features) + self.W2(hidden_with_time_axis))
 
-        # 50% of the times act greedy, taking most probable location
-        batch_greedy = tf.random.uniform(shape=[features.shape[0]], minval=0, maxval=2, dtype=tf.int32).numpy()
+        # attention_weights shape == (batch_size, 64, 1)
+        # you get 1 at the last axis because you are applying score to self.V
+        attention_weights = tf.nn.softmax(self.V(score), axis=1)
 
-        # For each batch item in batch, act either greedy or stochastic
-        for idx, act_greedy in enumerate(batch_greedy):
+        # context_vector shape after sum == (batch_size, hidden_size)
+        context_vector = []
+        selected_idx = []
+        attention_location = None
 
-            # attention_location_s, shape = scalar
-            if act_greedy or not train_mode:  # FIXME: correct to always choose highest probability during eval?
-                # With 50% chance, set the sampled Attention location s to its expected value alpha - Not during eval!
-                attention_location_s = tf.squeeze(tf.argmax(attention_probs_alpha[idx, :], axis=-1))
+        # Boolean indicating for which images to compute captions greedily
+        greedy_caption = tf.random.categorical(tf.constant([[0.5, 0.5]]), batch_size)
+
+        for sample in range(batch_size):
+            if greedy_caption[sample] or not train_mode:
+                # For 50% of images, construct captions greedily
+                attention_location = tf.argmax(attention_weights[sample])
+                context_vector.append(features[sample, attention_location])
             else:
-                # Select feature based on stochastic sampling from Multinoulli (categorical) distribution with probabilities attention_probs_alpha
-                one_hot_selection = tensorflow_probability.distributions.Multinomial(total_count=1.,
-                                                                                     probs=attention_probs_alpha)
-                attention_location_s = tf.squeeze(tf.argmax(one_hot_selection[idx, :], axis=-1))
+                # Sample caption location from Multinoulli distribution parameterized by computed attention weights
+                one_hot_select = tfp.distributions.Multinomial(total_count=1., probs=attention_weights).sample(1)[0]
+                attention_location = tf.argmax(one_hot_select)
+                context_vector.append(features[sample, attention_location])
 
-            # Construct context vector by selecting stochastically chosen feature to pay Attention to;
-            # context_vector_z, shape after selection of feature: (batch_size, embedding_dim)
-            context_vector_z = tf.concat([context_vector_z, features[idx, attention_location_s, :]], axis=0)
+        context_vector = tf.stack(context_vector)
+        selected_idx.append(attention_location)
 
-        return context_vector_z[1:], attention_probs_alpha  # Remove empty first element
-
+        return context_vector, attention_weights, selected_idx

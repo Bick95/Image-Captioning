@@ -6,7 +6,7 @@ from utils.utils import *
 from preprocessing.preprocessing import *
 import tensorflow as tf
 from variables import csv_file_path, image_path, debug, max_words, embedding_dim, units, vocab_size, \
-    plot_attention_idx_list
+    plot_attention_idx_list, attention_mode, SOFT_ATTENTION, HARD_ATTENTION
 from training import training
 from evaluation import evaluate, get_plot_attention, plot_attention, random_string
 from Attention.modules import *
@@ -52,7 +52,6 @@ def main():
                                                                                  data_split, debug)
 
     print([tokenizer.index_word[i] for i in range(max_words)])
-    print('VOCAB FULL!!!')
 
     # Dataset Exploration
     if debug:
@@ -67,7 +66,10 @@ def main():
 
     # Encoding-Attention-Decoding Architecture
     encoder = InceptionEncoder(embedding_dim)
-    attention_module = SoftAttention(units)
+    if attention_mode == SOFT_ATTENTION:
+        attention_module = SoftAttention(units)
+    elif attention_mode == HARD_ATTENTION:
+        attention_module = HardAttention(units)
     decoder = RNNDecoder(embedding_dim, units, vocab_size)
     print('Done setting up model.')
 

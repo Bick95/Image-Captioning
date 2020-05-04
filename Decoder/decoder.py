@@ -40,7 +40,7 @@ class RNNDecoder(tf.keras.Model):
 
         # Produce probability distribution over vocab
         x = tf.nn.softmax(x, axis=1)            # size=(batch_size, vocab_length+1)
-        
+
         return x, new_hidden
 
 

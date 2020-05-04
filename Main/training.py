@@ -4,7 +4,8 @@ import os, sys
 sys.path.append(os.path.dirname(os.getcwd()))
 import tensorflow as tf
 from utils.utils import load_image_batch, load_image
-from variables import BATCH_SIZE, EPOCHS, loss_function_choice, Patience, learning_rate, ckpt_frequency
+from variables import BATCH_SIZE, EPOCHS, loss_function_choice, Patience, learning_rate, ckpt_frequency, \
+                      attention_mode, SOFT_ATTENTION, HARD_ATTENTION
 import time
 import numpy as np
 
@@ -75,11 +76,12 @@ def loss_function(real, pred):
 #@tf.function
 def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer, optimizer, train_flag):
     loss, reg_loss, data_loss = 0., 0., 0.
-    batch_acc_prob = 0  # TODO: implement
     # Initializing the hidden state for each batch
     # because the captions are not related from image to image
     hidden = decoder.reset_state(batch_size=targets.shape[0])
     dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * targets.shape[0], 1)
+    # For HardAttention:
+    batch_likelihoods = []
 
     # Prediction step
     with tf.GradientTape() as tape:
@@ -90,12 +92,25 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
         # Repeat, appending caption by one word at a time
         for i in range(1, targets.shape[1]):
             #print('Iteration:', i)
-            # Passing the features through the attention module and decoder
-            context_vector, attention_weights = attention_module(features, hidden)
 
-            predictions, hidden = decoder(dec_input, hidden, context_vector)
+            if attention_mode == SOFT_ATTENTION:
+                # Passing the features through the attention module and decoder
+                context_vector, attention_weights = attention_module(features, hidden)
 
-            data_loss += loss_function(targets[:, i], predictions)
+                predictions, hidden = decoder(dec_input, hidden, context_vector)
+
+                data_loss += loss_function(targets[:, i], predictions)
+
+            elif attention_mode == HARD_ATTENTION:
+                # Passing the features through the attention module and decoder
+                context_vector, attention_weights, attention_location = attention_module(features, hidden)
+
+                predictions, hidden = decoder(dec_input, hidden, context_vector)
+
+                mean_loss, gt_likelihood = attention_module.loss(targets[:, i], predictions, attention_weights, attention_location)
+
+                data_loss += mean_loss
+                batch_likelihoods.append(gt_likelihood)
 
             reg_loss += (tf.math.reduce_sum(encoder.losses) +
                          tf.math.reduce_sum(attention_module.losses) +
@@ -124,10 +139,18 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
     if train_flag:
         trainable_variables = encoder.trainable_variables + attention_module.trainable_variables + \
                               decoder.trainable_variables
-        gradients = tape.gradient(loss, trainable_variables)
+        if attention_mode == SOFT_ATTENTION:
+            gradients = tape.gradient(loss, trainable_variables)
+        elif attention_mode == HARD_ATTENTION:
+            gradients = tape.gradient(loss / i, trainable_variables)
+        else:
+            gradients = None
         optimizer.apply_gradients(zip(gradients, trainable_variables))
 
-    return data_loss, avg_data_loss, reg_loss, loss, batch_acc_prob
+    if attention_mode == HARD_ATTENTION:
+        attention_module.update(batch_likelihoods, i)
+
+    return data_loss, avg_data_loss, reg_loss, loss
 
 
 def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module, decoder, model_folder):
@@ -188,11 +211,9 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
             # Read in images from paths
             img_batch = load_image_batch(img_paths)
             # Perform training on one image
-            data_loss, avg_data_loss, reg_loss, loss, batch_acc_prob = train_step(img_batch, targets, decoder,
-                                                                                  attention_module, encoder, tokenizer,
-                                                                                  optimizer, 1)  # 1 - weights trainable & teacher forcing
-
-            attention_module.update(batch_acc_prob)  # TODO:  for hard attention
+            data_loss, avg_data_loss, reg_loss, loss = train_step(img_batch, targets, decoder,
+                                                                  attention_module, encoder, tokenizer,
+                                                                  optimizer, 1)  # 1 - weights trainable & teacher forcing
 
             total_data_loss += data_loss
             total_avg_data_loss += avg_data_loss
@@ -222,7 +243,7 @@ def training(train_ds_meta, valid_ds_meta, tokenizer, encoder, attention_module,
 
         for (batch, (img_paths, targets)) in enumerate(valid_ds_meta):
             img_batch = load_image_batch(img_paths)
-            data_loss, avg_data_loss, reg_loss, loss, _ = train_step(img_batch, targets, decoder, attention_module,
+            data_loss, avg_data_loss, reg_loss, loss = train_step(img_batch, targets, decoder, attention_module,
                                                                           encoder, tokenizer, optimizer, 0)  # 0 - weights not trainable & no teacher forcing
             total_data_loss += data_loss
             total_avg_data_loss += avg_data_loss

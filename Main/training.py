@@ -117,6 +117,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
                          tf.math.reduce_sum(decoder.losses))
 
             loss = data_loss + reg_loss  # Must be inside with-scope, otherwise trainable variables will not be found
+            ha_loss = loss / i  # Exclusively for HardAttention
 
             if train_flag:
                 # Using teacher forcing during training
@@ -142,7 +143,7 @@ def train_step(img_batch, targets, decoder, attention_module, encoder, tokenizer
         if attention_mode == SOFT_ATTENTION:
             gradients = tape.gradient(loss, trainable_variables)
         elif attention_mode == HARD_ATTENTION:
-            gradients = tape.gradient(loss / i, trainable_variables)
+            gradients = tape.gradient(ha_loss, trainable_variables)
         else:
             gradients = None
         optimizer.apply_gradients(zip(gradients, trainable_variables))

@@ -55,7 +55,8 @@ class HardAttention(tf.keras.Model):
         self.W2 = tf.keras.layers.Dense(units, kernel_regularizer=None)
         self.V = tf.keras.layers.Dense(1, kernel_regularizer=None)  # vs: tf.keras.regularizers.l2(0.01)
         self.b = 0.
-        self.lambda_r = self.lambda_e = 0.5
+        self.lambda_r = 0.5
+        self.lambda_e = 0.1
 
     def update(self, evol_gt_likelihoods, caption_len):
         """
@@ -81,6 +82,7 @@ class HardAttention(tf.keras.Model):
 
         # Update b
         self.b = 0.9 * self.b + 0.1 * tf.math.log(mean_likelihood)
+
         print('New b:', self.b)
 
     def shannon_entropy(self, batch_probs):
@@ -94,7 +96,6 @@ class HardAttention(tf.keras.Model):
         log_p = tf.math.log(batch_probs)
         product = tf.math.multiply(batch_probs, log_p)
         entropy_term = tf.math.reduce_sum(product, axis=1)
-        print('Entropy:', -entropy_term)
         return -entropy_term
 
     def loss(self, target_idx, decoder_output, attention_weights, attention_location):
@@ -134,6 +135,8 @@ class HardAttention(tf.keras.Model):
         # Take into account averaging of loss over caption length (=N)
         #mean_loss /= self.caption_len  # Done in train_step()
 
+        print('GT Likelihoods:\n', gt_likelihood)
+
         return mean_loss, gt_likelihood
 
 
@@ -157,6 +160,7 @@ class HardAttention(tf.keras.Model):
         # attention_weights shape == (batch_size, 64, 1)
         # you get 1 at the last axis because you are applying score to self.V
         attention_weights = tf.nn.softmax(self.V(score), axis=1)
+        attention_weights_sqzd = tf.squeeze(attention_weights)
 
         # context_vector shape after sum == (batch_size, hidden_size)
         context_vector = []
@@ -167,13 +171,13 @@ class HardAttention(tf.keras.Model):
         greedy_caption = tf.random.categorical(tf.constant([[0.5, 0.5]]), batch_size)
 
         for sample in range(batch_size):
-            if greedy_caption[sample] or not train_mode:
+            if greedy_caption[0][sample] or not train_mode:
                 # For 50% of images, construct captions greedily
-                attention_location = tf.argmax(attention_weights[sample])
+                attention_location = tf.argmax(attention_weights_sqzd[sample])
                 context_vector.append(features[sample, attention_location])
             else:
                 # Sample caption location from Multinoulli distribution parameterized by computed attention weights
-                one_hot_select = tfp.distributions.Multinomial(total_count=1., probs=attention_weights).sample(1)[0]
+                one_hot_select = tfp.distributions.Multinomial(total_count=1., probs=attention_weights_sqzd[sample]).sample(1)[0]
                 attention_location = tf.argmax(one_hot_select)
                 context_vector.append(features[sample, attention_location])
 

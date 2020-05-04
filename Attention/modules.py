@@ -53,7 +53,7 @@ class HardAttention(tf.keras.Model):
 
         self.W1 = tf.keras.layers.Dense(units, kernel_regularizer=None)
         self.W2 = tf.keras.layers.Dense(units, kernel_regularizer=None)
-        self.V = tf.keras.layers.Dense(1, kernel_regularizer=None)  # vs: tf.keras.regularizers.l2(0.01)
+        self.V = tf.keras.layers.Dense(1, kernel_regularizer=None)  # None vs tf.keras.regularizers.l2(0.01)
         self.b = 0.
         self.lambda_r = 0.5
         self.lambda_e = 0.1
@@ -110,8 +110,8 @@ class HardAttention(tf.keras.Model):
         """
 
         # Make sure to avoid log(0)
-        decoder_output += 0.000000001
-        attention_weights += 0.000000001
+        decoder_output += 0.0000001
+        attention_weights += 0.0000001
 
         # Collect probabilities for all batch elements of correct class/word
         gt_likelihood = tf.convert_to_tensor([decoder_output[i, x] for i, x in enumerate(target_idx)])

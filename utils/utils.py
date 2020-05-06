@@ -17,9 +17,19 @@ def get_image_n_caption(csv_file_path,images_path,debug):
     caption_list = []
     img_name_list = []
     cnt = 0
+    skip_cnt=0
     with open(csv_file_path, 'r') as csvfile:
         data = csv.reader(csvfile, delimiter='|')
         for row in data:
+            if(cnt==0):
+                cnt=cnt+1
+                continue
+            skip_check = skip_cnt%5
+            if skip_check in range(2,5):
+                skip_cnt = skip_cnt+1
+                continue
+            skip_cnt = skip_cnt + 1
+            print(row)
             img_name = ""
             img_name = images_path + row[0]
             caption  = '<start> ' + row[2] + ' <end>'
@@ -30,11 +40,11 @@ def get_image_n_caption(csv_file_path,images_path,debug):
             cnt = cnt + 1
             if(cnt == 150):
                 break
-    img_name_list = img_name_list[1:] #1st row contains column names.
-    caption_list  = caption_list[1:]  #1st row contains column names.
+    # img_name_list = img_name_list[] #1st row contains column names.
+    # caption_list  = caption_list[1:]  #1st row contains column names.
     encode_train = sorted(set(img_name_list))
-    store_img_extracted_features(encode_train) #Store the extracted features from the images.
-    return img_name_list, caption_list
+    img_extract_model=store_img_extracted_features(encode_train) #Store the extracted features from the images.
+    return img_name_list, caption_list, img_extract_model
 
 
 

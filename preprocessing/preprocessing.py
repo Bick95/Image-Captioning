@@ -36,7 +36,9 @@ def store_img_extracted_features(encode_train):
                                     (batch_features.shape[0], -1, batch_features.shape[3]))
         for bf, p in zip(batch_features, path):
             path_of_feature = p.numpy().decode("utf-8")
+
             np.save(path_of_feature, bf.numpy())
+    return image_features_extract_model
 
 def tokenize_words(captions,tokenizer):
     tokenizer.fit_on_texts(captions)

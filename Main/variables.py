@@ -23,4 +23,4 @@ EPOCHS = 20
 
 Patience = 10  #Patience of early stopping
 
-plot_attention_list = [1, 10, 100]
+plot_attention_list = [20,10,1]

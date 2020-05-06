@@ -31,7 +31,7 @@ class RNNDecoder(tf.keras.Model):
         # x shape after passing through embedding == (batch_size, 1, embedding_dim)
         x = self.embedding(x)
         # x shape after concatenation == (batch_size, 1, embedding_dim + hidden_size)
-        x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
+        #x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
         # passing the concatenated vector to the GRU
         output, state = self.gru(x)
         # shape == (batch_size, max_length, hidden_size)
@@ -40,6 +40,7 @@ class RNNDecoder(tf.keras.Model):
         x = tf.reshape(x, (-1, x.shape[2]))
         # output shape == (batch_size * max_length, vocab)
         x = self.fc2(x)
+        #return x, state
         return x, state, attention_weights
 
     def reset_state(self, batch_size):

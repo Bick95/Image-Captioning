@@ -7,8 +7,8 @@
 #image_path = "../data/flickr30k_images/flickr30k_images/"
 
 # Daniel's:
-csv_file_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/results.csv"
-image_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/flickr30k_images/"
+csv_file_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/results.csv"     # TODO
+image_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/flickr30k_images/"  # TODO
 
 # Peregrine:
 #csv_file_path = "../../flickr30k_images/results.csv"
@@ -16,18 +16,18 @@ image_path = "/media/daniel/Elements/DeepLearning/flickr30k_images/flickr30k_ima
 
 #Debug should be set to 1 whenever you want to test the flow of the code on your system.
 #Instead of all images, it will just start training for 100 images
-debug = 1
+debug = 0
 
 #Number of words to be considered while encoding
 if debug:  # Vocab size rather low in debug mode
     max_words = 3000  # experimentally tested
 else:
-    max_words = 2000
+    max_words = 5000
 
 # Training Variables
-learning_rate = 0.0001
+learning_rate = 0.0001                                                             # TODO
 if debug:
-    BATCH_SIZE = 32
+    BATCH_SIZE = 16                                                                # TODO
 else:
     BATCH_SIZE = 32  # Debug mode - Batch size - 16, else - 32
 BUFFER_SIZE = 128
@@ -41,7 +41,7 @@ captions_per_image = 4
 # These two variables represent that vector shape
 features_shape = 2048
 attention_features_shape = 64
-EPOCHS = 2
+EPOCHS = 2                                                                          # TODO
 ckpt_frequency = 50
 
 Patience = EPOCHS  # Patience of early stopping

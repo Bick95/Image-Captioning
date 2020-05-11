@@ -45,7 +45,7 @@ def _get_image_caption_list(csv_file_path, images_path, debug):
                     # New image, reset counter for captions per image
                     capt_ctr = 0
                     unique_images.append(img_name)
-                if capt_ctr < captions_per_image:
+                if not debug or capt_ctr < captions_per_image:
                     # Add caption for image if not max number of captions per image exceeded yet
                     img_name_list.append(img_name)
                     caption_list.append(caption)
@@ -57,14 +57,13 @@ def _get_image_caption_list(csv_file_path, images_path, debug):
                 # Handle erroneous dataset entries
                 print('Skipped training example due to import error:\n', row)
 
-            if len(caption_list) == num_captions:
+            if debug and len(caption_list) == num_captions:
                 break
 
     img_name_list = img_name_list[1:]  # 1st row contains column names.
     caption_list = caption_list[1:]  # 1st row contains column names.
     unique_images = unique_images[1:]  # 1st row contains column names.
     print('NUMBER CAPTIONS: ', len(caption_list))
-    #print('\n\nUNIQUE IMAGES:', unique_images, '\n\n')
     print('Len unique images:', len(unique_images))
     return img_name_list, caption_list, unique_images
 
@@ -184,12 +183,6 @@ def get_meta_datasets(captions_file_path, images_path, tokenizer, data_split, de
 
     # Test data set
     test_ds_meta = tf.data.Dataset.from_tensor_slices((img_names_test, caps_test))
-
-    # Debug: Have a look at contents of test dataset
-    #for x in test_ds_meta:
-    #    print(x[0])
-    #    capt = [tokenizer.index_word[i] for i in x[1].numpy()]
-    #    print(capt)
 
     return train_ds_meta, valid_ds_meta, test_ds_meta, max_capt_len, plot_attention_img_list, \
            plot_attention_caption_list

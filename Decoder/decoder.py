@@ -15,9 +15,9 @@ class RNNDecoder(tf.keras.Model):
                                        return_sequences=True,
                                        return_state=True,
                                        recurrent_initializer='glorot_uniform',
-                                       kernel_regularizer=tf.keras.regularizers.l2(0.01))
-        self.fc1 = tf.keras.layers.Dense(self.units, kernel_regularizer=tf.keras.regularizers.l2(0.01))
-        self.fc2 = tf.keras.layers.Dense(vocab_size, kernel_regularizer=tf.keras.regularizers.l2(0.01))
+                                       kernel_regularizer=None)
+        self.fc1 = tf.keras.layers.Dense(self.units, kernel_regularizer=None)  # tf.keras.regularizers.l2(0.01)
+        self.fc2 = tf.keras.layers.Dense(vocab_size, kernel_regularizer=None)
 
 
     def call(self, prev_word, prev_hidden, context_vector):

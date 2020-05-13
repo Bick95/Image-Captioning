@@ -11,7 +11,9 @@ import numpy as np
 from PIL import Image
 from preprocessing.preprocessing import *
 from utils.utils import *
-from nltk.translate.bleu_score import sentence_bleu
+from nltk.translate.bleu_score import SmoothingFunction
+from nltk.translate import bleu
+import statistics
 import matplotlib.pyplot as plt
 import math
 
@@ -29,8 +31,10 @@ def random_string(length=10):
     return ''.join(random.choice(letters) for i in range(length))
 
 def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, tokenizer, model_folder):
-    score = 0
-
+    smoothie = SmoothingFunction().method4
+    score1 = []  # weights - 0.25 0.25 0.25 0.25
+    score2 = []  # weights - 0    0.33 0.33 0.33
+    score3 = []  # weights - 0  0.5 0.5 0
     for (idx, (img_path, caption)) in enumerate(test_ds_meta):
         caption = caption.numpy()[1:]  # Convert to numpy array abd remove start token
         print('Idx:', idx)
@@ -63,15 +67,20 @@ def evaluate(test_ds_meta, encoder, attention_module, decoder, max_length, token
             #test_num_capt_clip.append(predicted_id)
             result.append(tokenizer.index_word[predicted_id])
             if tokenizer.index_word[predicted_id] == '<end>':
-                score = score + sentence_bleu(real_caption, result, weights=(0, 0.5, 0.5, 0))
+                result.insert(0, "<start>")
+                result = " ".join(result)
+                score1.append(bleu([real_caption], result, smoothing_function=smoothie, weights=(0.25, 0.25, 0.25, 0.25)))
+                score2.append(bleu([real_caption], result, smoothing_function=smoothie, weights=(0, 0.33, 0.33, 0.33)))
+                score3.append(bleu([real_caption], result, smoothing_function=smoothie, weights=(0, 0.5, 0.5, 0)))
                 break
             dec_input = tf.expand_dims([predicted_id], 0)
 
         print('Result:\t\t', result)
         print('Predicted:\t', test_num_capt)
-    score = score + sentence_bleu(real_caption, result, weights=(0, 0.5, 0.5, 0))
-    return score / float(len(list(test_ds_meta)))
-
+    score1.append(bleu([real_caption], result, smoothing_function=smoothie, weights=(0.25, 0.25, 0.25, 0.25)))
+    score2.append(bleu([real_caption], result, smoothing_function=smoothie, weights=(0, 0.33, 0.33, 0.33)))
+    score3.append(bleu([real_caption], result, smoothing_function=smoothie, weights=(0, 0.5, 0.5, 0)))
+    return statistics.mean(score1), statistics.mean(score2), statistics.mean(score3)
 
 # Get the caption and the attention plot for the image
 def get_plot_attention(img_path, encoder, attention_module, decoder, max_length, tokenizer):

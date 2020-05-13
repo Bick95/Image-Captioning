@@ -91,10 +91,10 @@ def main():
     print('Evolution loss on validation data:\n', eval_avg_total_loss)
 
     # Evaluate
-    bleu_score = evaluate(test_ds_meta, encoder, attention_module, decoder, max_capt_len, tokenizer, model_folder_id)
+    bleu_score1, bleu_score2, bleu_score3 = evaluate(test_ds_meta, encoder, attention_module, decoder, max_capt_len, tokenizer, model_folder_id)
     print('Done with evaluation.')
 
-    print("Bleu score:", bleu_score)
+    print("Bleu scores are :", bleu_score1, bleu_score2, bleu_score3)
 
     # Generate example images
     count = 0

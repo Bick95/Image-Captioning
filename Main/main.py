@@ -96,6 +96,8 @@ def main():
 
     print("Bleu scores are :", bleu_score1, bleu_score2, bleu_score3)
 
+    bleu_score = [bleu_score1, bleu_score2, bleu_score3]
+
     # Generate example images
     count = 0
     for img_path in plot_attention_img_list:

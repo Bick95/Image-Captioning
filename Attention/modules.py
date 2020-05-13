@@ -135,7 +135,10 @@ class HardAttention(tf.keras.Model):
         # Take into account averaging of loss over caption length (=N)
         #mean_loss /= self.caption_len  # Done in train_step()
 
-        print('GT Likelihoods:\n', gt_likelihood)
+        print('\nGT Likelihoods:\n', gt_likelihood)         # Likelihoods of predicting ground-truth labels/word tokens
+        predictions = tf.math.argmax(decoder_output, axis=1)
+        print('Predictions:\t', predictions)                # Predicted word tokens
+        print('Real:\t\t', target_idx)                      # Ground truth word tokens
 
         return mean_loss, gt_likelihood
 

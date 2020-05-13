@@ -35,8 +35,8 @@ def evaluate(test_data,encoder,decoder, max_length, tokenizer, image_features_ex
         dec_input = tf.expand_dims([tokenizer.word_index['<start>']], 0)
         result = []
         for i in range(max_length):
-            #predictions, hidden, attention_weights = decoder(dec_input, features, hidden)
-            predictions, hidden,attention_weights = decoder(dec_input, features, hidden)
+            #predictions, hidden = decoder(dec_input, features, hidden)
+            predictions, hidden, attention_weights = decoder(dec_input, features, hidden)
             predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()
             result.append(tokenizer.index_word[predicted_id])
             if tokenizer.index_word[predicted_id] == '<end>':
@@ -49,7 +49,7 @@ def evaluate(test_data,encoder,decoder, max_length, tokenizer, image_features_ex
                 print("Score1 \n",bleu([real_caption], result, smoothing_function=smoothie,weights=(0.25, 0.25, 0.25, 0.25)))
                 print("Score2 \n",bleu([real_caption], result, smoothing_function=smoothie, weights=(0, 0.33, 0.33, 0.33)))
                 print("Score3 \n", bleu([real_caption], result, smoothing_function=smoothie, weights=(0, 0., 0.5, 0)))
-
+                print("Image name",image)
                 print("Real caption",real_caption)
                 print("Result",result)
                 print("Scores are ",score1, score2, score3)
@@ -76,6 +76,7 @@ def get_plot_attention(image,encoder,decoder, max_length, tokenizer):
     result = []
     for i in range(max_length):
         predictions, hidden, attention_weights = decoder(dec_input, features, hidden)
+
         attention_plot[i] = tf.reshape(attention_weights, (-1,)).numpy()
         predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()
         result.append(tokenizer.index_word[predicted_id])

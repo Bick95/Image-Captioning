@@ -57,7 +57,7 @@ class RNNDecoder(tf.keras.Model):
 
     def reset_state(self, batch_size):
         self.attention_weights = None
-        self.attention_locations = None
+        self.attention_location = None
         self.gt_likelihoods = []
         return tf.zeros((batch_size, self.units))
 

@@ -18,6 +18,7 @@ import statistics
 #def evaluate(image, tokenizer, max_length, decoder, encoder):
 
 def evaluate(test_data,encoder,decoder, max_length, tokenizer, image_features_extract_model):
+    test_flag = 0
     images = test_data[0]
     captions = test_data[1]
     smoothie = SmoothingFunction().method4
@@ -36,7 +37,7 @@ def evaluate(test_data,encoder,decoder, max_length, tokenizer, image_features_ex
         result = []
         for i in range(max_length):
             #predictions, hidden = decoder(dec_input, features, hidden)
-            predictions, hidden, attention_weights = decoder(dec_input, features, hidden)
+            predictions, hidden, attention_weights = decoder(dec_input, features, hidden, test_flag)
             predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()
             result.append(tokenizer.index_word[predicted_id])
             if tokenizer.index_word[predicted_id] == '<end>':
@@ -75,7 +76,7 @@ def get_plot_attention(image,encoder,decoder, max_length, tokenizer):
     dec_input = tf.expand_dims([tokenizer.word_index['<start>']], 0)
     result = []
     for i in range(max_length):
-        predictions, hidden, attention_weights = decoder(dec_input, features, hidden)
+        predictions, hidden, attention_weights = decoder(dec_input, features, hidden, 0)
 
         attention_plot[i] = tf.reshape(attention_weights, (-1,)).numpy()
         predicted_id = tf.random.categorical(predictions, 1)[0][0].numpy()

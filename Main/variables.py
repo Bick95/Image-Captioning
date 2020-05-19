@@ -6,7 +6,7 @@ csv_file_path = "../data/flickr30k_images/results.csv"
 image_path = "../data/flickr30k_images/flickr30k_images/"
 #Debug should be set to 1 whenever you want to test the flow of the code on your system.
 #Instead of all images, it will just start training for 100 images
-debug = 1
+debug = 0
 #Number of words to be considered while encoding
 max_words = 5000
 #TRAINING VARIABLES
@@ -24,3 +24,7 @@ EPOCHS = 20
 Patience = 10  #Patience of early stopping
 
 plot_attention_list = [20,10,1]
+
+attention_mode = 0
+SOFT_ATTENTION = 0
+HARD_ATTENTION = 1

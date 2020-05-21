@@ -21,7 +21,7 @@ Caption: <start> a brown and brown and white dog jumping into the ocean <end>
 
 ![](/results/sa_result_3.png)
 
-Caption: <start> man riding a trampoline outside at a bench with a speech on a colored slide <end>
+Caption: <start> a man riding a trampoline outside at a bench with a speech on a colored slide <end>
 
 #### Non-Attention-Based result: 
 

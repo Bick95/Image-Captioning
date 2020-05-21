@@ -5,14 +5,14 @@ To make things more readily comparable, we present some of our best results obta
 
 #### Soft Attention-Based result 1:
 
-![](/results/soft_attention_result_1.png)
+![](/results/sa_result_1.png)
 
 Caption: <start> a couple is shoveling snow wearing backpacks are walking together through the forest <end>
   
   
 #### Soft Attention-Based result 2:
 
-![](/results/soft_attention_result_2.png)
+![](/results/sa_result_2.png)
 
 Caption: <start> a brown and brown and white dog jumping into the ocean <end>
 
